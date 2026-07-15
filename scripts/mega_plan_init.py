@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a canonical Mega Skill execution plan skeleton."""
+"""Create a canonical Megaskill execution plan skeleton."""
 
 from __future__ import annotations
 

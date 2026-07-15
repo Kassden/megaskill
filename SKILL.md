@@ -1,11 +1,11 @@
 ---
-name: mega-skill
+name: megaskill
 description: Use for high-rigor execution planning and end-to-end implementation where Codex must create decision-complete plans for lower-level agents, prevent regressions, split work into atomic units, avoid lazy handoff, continue through obvious next steps, and prove done with tests, commits, push/deploy, or real-result verification when available. Trigger for requests like "super execution", "write a detailed agent plan", "implement the plan", "done means done", "no regressions", "atomic commits", "ship it", or any multi-step coding task that must be driven until done or genuinely blocked.
 ---
 
-# Mega Skill
+# Megaskill
 
-Use this skill to turn a goal into guarded, atomic, verified execution.
+Use Megaskill to turn a goal into guarded, atomic, verified execution.
 
 Core rule: lock the goal, write or validate a canonical plan, execute the smallest independently valid subphase, prove it, record evidence, and continue until the full goal is done or genuinely blocked.
 

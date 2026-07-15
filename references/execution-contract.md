@@ -1,11 +1,11 @@
-# Mega Skill Execution Contract
+# Megaskill Execution Contract
 
 ## Pre-Edit Declaration
 
 Before mutating files, state:
 
 ```text
-Mega Skill Guardrail
+Megaskill Guardrail
 - Goal:
 - Acceptance criteria:
 - Planned edit surface:

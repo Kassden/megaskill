@@ -3,7 +3,7 @@
 Use this at completion.
 
 ```text
-Mega Skill Handoff
+Megaskill Handoff
 - Goal:
 - Acceptance criteria:
 - Requested change delivered:

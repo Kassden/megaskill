@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record and summarize Mega Skill verification evidence."""
+"""Record and summarize Megaskill verification evidence."""
 
 from __future__ import annotations
 

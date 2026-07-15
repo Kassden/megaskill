@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a Mega Skill markdown plan."""
+"""Validate a Megaskill markdown plan."""
 
 from __future__ import annotations
 

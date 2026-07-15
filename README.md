@@ -1,6 +1,6 @@
-# Mega Skill
+# Megaskill
 
-Mega Skill is a high-rigor execution skill for AI coding agents. It turns a broad coding goal into a guarded, step-by-step execution loop with explicit acceptance criteria, regression guardrails, atomic commits, verification evidence, and a final done/blocked/not-done verdict.
+Megaskill is a high-rigor execution skill for AI coding agents. It turns a broad coding goal into a guarded, step-by-step execution loop with explicit acceptance criteria, regression guardrails, atomic commits, verification evidence, and a final done/blocked/not-done verdict.
 
 Use it when an agent needs to write a decision-complete plan for lower-level agents, prevent scope drift, execute iteratively, and prove the result with real checks instead of handing work back early.
 
@@ -14,6 +14,26 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 - Evidence recording for verification commands.
 - Final handoff structure with a clear `done`, `blocked`, or `not done` verdict.
 
+## Execution Loop
+
+```mermaid
+flowchart TD
+    A[Lock goal] --> B[Define acceptance criteria]
+    B --> C[Create or validate plan]
+    C --> D[Declare regression guardrails]
+    D --> E[Execute one subphase]
+    E --> F[Run verification]
+    F --> G[Record evidence]
+    G --> H[Check scope drift]
+    H --> I[Check atomic commit]
+    I --> J{Goal complete?}
+    J -- No --> E
+    J -- Yes --> K[Final handoff: done]
+    F -- Fails --> L{Real blocker?}
+    L -- No --> E
+    L -- Yes --> M[Final handoff: blocked]
+```
+
 ## Install
 
 ### Codex
@@ -22,19 +42,19 @@ Recommended Codex install:
 
 ```bash
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo Kassden/mega-skill \
+  --repo Kassden/megaskill \
   --path . \
-  --name mega-skill
+  --name megaskill
 ```
 
 For an editable install, clone this repo directly into your Codex skills directory:
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/Kassden/mega-skill.git ~/.codex/skills/mega-skill
+git clone https://github.com/Kassden/megaskill.git ~/.codex/skills/megaskill
 ```
 
-Restart Codex or start a new session, then ask for `$mega-skill`.
+Restart Codex or start a new session, then ask for `$megaskill`.
 
 ### Claude Code
 
@@ -42,24 +62,24 @@ Install as a personal Claude Code skill:
 
 ```bash
 mkdir -p ~/.claude/skills
-git clone https://github.com/Kassden/mega-skill.git ~/.claude/skills/mega-skill
+git clone https://github.com/Kassden/megaskill.git ~/.claude/skills/megaskill
 ```
 
 Or install it for one project:
 
 ```bash
 mkdir -p .claude/skills
-git clone https://github.com/Kassden/mega-skill.git .claude/skills/mega-skill
+git clone https://github.com/Kassden/megaskill.git .claude/skills/megaskill
 ```
 
-Restart Claude Code or start a new session, then ask Claude to use Mega Skill for guarded execution planning and verification.
+Restart Claude Code or start a new session, then ask Claude to use Megaskill for guarded execution planning and verification.
 
 ## Quick Start
 
-Run commands from the Mega Skill folder:
+Run commands from the Megaskill folder:
 
 ```bash
-cd ~/.codex/skills/mega-skill
+cd ~/.codex/skills/megaskill
 ```
 
 Create a plan skeleton:

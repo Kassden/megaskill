@@ -1,4 +1,4 @@
 interface:
-  display_name: "Mega Skill"
+  display_name: "Megaskill"
   short_description: "Plan and execute guarded, verified work."
-  default_prompt: "Use $mega-skill to create a decision-complete execution plan, then execute it step by step until done or genuinely blocked."
+  default_prompt: "Use $megaskill to create a decision-complete execution plan, then execute it step by step until done or genuinely blocked."
