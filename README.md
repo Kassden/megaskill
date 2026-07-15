@@ -1,5 +1,23 @@
 # Megaskill
 
+<p align="center">
+  <a href="https://github.com/Kassden/megaskill/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Kassden/megaskill?style=for-the-badge&logo=github"></a>
+  <a href="https://github.com/Kassden/megaskill/forks"><img alt="GitHub forks" src="https://img.shields.io/github/forks/Kassden/megaskill?style=for-the-badge&logo=github"></a>
+  <a href="https://github.com/Kassden/megaskill/watchers"><img alt="GitHub watchers" src="https://img.shields.io/github/watchers/Kassden/megaskill?style=for-the-badge&logo=github"></a>
+  <img alt="Repo size" src="https://img.shields.io/github/repo-size/Kassden/megaskill?style=for-the-badge">
+  <a href="https://tokei.kojix2.net/github/Kassden/megaskill"><img alt="Lines of code" src="https://img.shields.io/endpoint?style=for-the-badge&url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FKassden%2Fmegaskill%2Flines"></a>
+  <img alt="Languages" src="https://img.shields.io/github/languages/count/Kassden/megaskill?style=for-the-badge">
+  <img alt="Top language" src="https://img.shields.io/github/languages/top/Kassden/megaskill?style=for-the-badge">
+  <a href="https://github.com/Kassden/megaskill/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Kassden/megaskill?style=for-the-badge"></a>
+  <a href="https://github.com/Kassden/megaskill/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Kassden/megaskill?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Kassden/megaskill#install"><img alt="Install for Codex" src="https://img.shields.io/badge/Codex-install-0A84FF?style=for-the-badge"></a>
+  <a href="https://github.com/Kassden/megaskill#quick-start"><img alt="Quick start" src="https://img.shields.io/badge/Quick%20Start-commands-2EA44F?style=for-the-badge"></a>
+  <a href="https://github.com/Kassden/megaskill#execution-loop"><img alt="Execution loop" src="https://img.shields.io/badge/Loop-plan%20%7C%20execute%20%7C%20prove-7B61FF?style=for-the-badge"></a>
+</p>
+
 Megaskill is a high-rigor execution skill for AI coding agents. It turns a broad coding goal into a guarded, step-by-step execution loop with explicit acceptance criteria, regression guardrails, atomic commits, verification evidence, and a final done/blocked/not-done verdict.
 
 Use it when an agent needs to write a decision-complete plan for lower-level agents, prevent scope drift, execute iteratively, and prove the result with real checks instead of handing work back early.
@@ -17,21 +35,28 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 ## Execution Loop
 
 ```mermaid
-flowchart TD
-    A[Lock goal] --> B[Define acceptance criteria]
-    B --> C[Create or validate plan]
-    C --> D[Declare regression guardrails]
-    D --> E[Execute one subphase]
-    E --> F[Run verification]
-    F --> G[Record evidence]
-    G --> H[Check scope drift]
-    H --> I[Check atomic commit]
-    I --> J{Goal complete?}
-    J -- No --> E
-    J -- Yes --> K[Final handoff: done]
-    F -- Fails --> L{Real blocker?}
-    L -- No --> E
-    L -- Yes --> M[Final handoff: blocked]
+flowchart LR
+    A(["Lock goal"]) --> B(["Acceptance criteria"])
+    B --> C(["Plan subphases"])
+    C --> D(["Declare guardrails"])
+    D --> E(["Execute one unit"])
+    E --> F(["Verify"])
+    F --> G(["Record evidence"])
+    G --> H(["Scope check"])
+    H --> I(["Atomic commit check"])
+    I --> J{"Complete?"}
+    J -- "next unit" --> E
+    J -- "yes" --> K(["Final handoff: done"])
+    F -- "fails" --> L{"Real blocker?"}
+    L -- "fixable" --> E
+    L -- "blocked" --> M(["Final handoff: blocked"])
+
+    classDef action fill:#F8FAFC,stroke:#334155,stroke-width:1.5px,color:#0F172A;
+    classDef decision fill:#FEF3C7,stroke:#B45309,stroke-width:1.5px,color:#78350F;
+    classDef terminal fill:#ECFDF5,stroke:#047857,stroke-width:1.5px,color:#064E3B;
+    class A,B,C,D,E,F,G,H,I action;
+    class J,L decision;
+    class K,M terminal;
 ```
 
 ## Install
