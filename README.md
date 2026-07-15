@@ -125,6 +125,110 @@ Summarize recorded evidence:
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_evidence.py summary
 ```
 
+## Example Goal And Research Plan
+
+Use this shape when assigning work to a lower-level coding agent. The important part is that each subphase is decision-complete: it names what to inspect, what may be edited, what proves success, and what must be checked off before moving on.
+
+```markdown
+# Add Cached Customer Search
+
+## GOAL
+- Add server-side caching to customer search so repeated identical queries return faster without changing search results, permissions, or API response shape.
+
+## Acceptance Criteria
+- [ ] Identical customer search requests reuse cached results within a 60 second TTL.
+- [ ] Users only receive results they are authorized to see.
+- [ ] Existing search response JSON remains backward compatible.
+- [ ] Cache behavior is covered by targeted tests.
+- [ ] Verification evidence is recorded before final handoff.
+
+## Research
+- Built-in options:
+  - Inspect the existing search API route, service layer, auth checks, and cache utilities already in the repo.
+  - Prefer existing framework cache primitives if the app already uses them.
+- Off-the-shelf options:
+  - Consider Redis or the platform cache only if the repo already has that dependency or production config.
+  - Do not introduce a new cache service for this subphase unless existing infrastructure proves it is available.
+- Official / standards sources:
+  - Check framework docs for cache invalidation and runtime constraints if a built-in cache is used.
+  - Check existing project docs for data privacy, tenancy, or authorization rules.
+
+## Regression Guardrails
+- Planned edit surface:
+  - `src/api/customers/search.ts`
+  - `src/services/customer-search.ts`
+  - `tests/customer-search-cache.test.ts`
+- Protected behaviors:
+  - Authorization filtering, response schema, pagination, sorting, and empty-state behavior.
+- Likely consumers:
+  - Customer search UI, saved-search workflows, API clients, and support tooling.
+- Damage radius:
+  - Moderate: API behavior and shared service path.
+- Proof plan:
+  - Run targeted cache tests, existing customer search tests, typecheck, and one manual API smoke if the app has a local dev server.
+
+## Phase 1: Discovery
+
+### Subphase 1.1: Map Search Flow
+- Commit: docs/plan only if a durable plan file is being committed; otherwise no commit.
+- Tests: no code tests; evidence is file/path inventory and confirmed call flow.
+- Success Criteria: exact API route, service function, auth boundary, and test locations are known.
+- Planned Touch Files:
+  - `MEGA_PLAN.md`
+- Checklist:
+  - [ ] Read the search route and identify request parameters.
+  - [ ] Trace the service function that produces search results.
+  - [ ] Identify where authorization or tenant filtering happens.
+  - [ ] Identify existing tests that must keep passing.
+  - [ ] Record findings in the plan before editing code.
+
+## Phase 2: Implementation
+
+### Subphase 2.1: Add Cache Key And TTL
+- Commit: add customer search cache key and TTL handling.
+- Tests: `npm test -- customer-search-cache`
+- Success Criteria: identical authorized queries can hit the cache while distinct users, tenants, query params, sort order, and pages produce separate cache keys.
+- Planned Touch Files:
+  - `src/services/customer-search.ts`
+  - `tests/customer-search-cache.test.ts`
+- Checklist:
+  - [ ] Build the cache key from user/tenant identity and normalized search params.
+  - [ ] Set TTL to 60 seconds.
+  - [ ] Avoid caching authorization failures.
+  - [ ] Add tests for cache hit, cache miss, and cross-user isolation.
+  - [ ] Run targeted tests and record evidence.
+  - [ ] Run `scripts/mega_scope_check.py MEGA_PLAN.md --staged` before commit.
+
+### Subphase 2.2: Preserve API Contract
+- Commit: preserve customer search API response shape with cached results.
+- Tests: `npm test -- customer-search` and `npm run typecheck`
+- Success Criteria: cached and uncached responses have the same JSON shape, status codes, pagination fields, and sorting behavior.
+- Planned Touch Files:
+  - `src/api/customers/search.ts`
+  - `tests/customer-search-cache.test.ts`
+- Checklist:
+  - [ ] Confirm the route still delegates authorization to the same boundary.
+  - [ ] Add or update a response-shape assertion.
+  - [ ] Run targeted search tests.
+  - [ ] Run typecheck.
+  - [ ] Record evidence for each verification command.
+  - [ ] Run `scripts/mega_commit_check.py` before commit.
+
+## Phase 3: Verification
+
+### Subphase 3.1: Final Evidence And Handoff
+- Commit: none unless verification docs are committed.
+- Tests: targeted tests, typecheck, and optional local API smoke.
+- Success Criteria: final handoff can state `done` with evidence, or name a precise blocker.
+- Planned Touch Files:
+  - `.mega/evidence.jsonl`
+- Checklist:
+  - [ ] Run `scripts/mega_evidence.py summary`.
+  - [ ] Confirm no unplanned files remain changed.
+  - [ ] Confirm commits are pushed if publishing is in scope.
+  - [ ] Write final handoff with verified surfaces, unverified surfaces, and verdict.
+```
+
 ## Scripts
 
 | Script | Purpose |
