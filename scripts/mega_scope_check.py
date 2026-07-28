@@ -24,6 +24,15 @@ def run_git(args: list[str]) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def in_git_repo() -> bool:
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        text=True,
+        capture_output=True,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
 def git_changed_files(staged: bool) -> list[str]:
     diff_args = ["diff", "--name-only", "--diff-filter=ACMR"]
     if staged:
@@ -84,6 +93,16 @@ def main() -> int:
     args = parser.parse_args()
 
     planned = parse_planned(Path(args.plan)) | {normalize(p) for p in args.planned}
+    if not in_git_repo():
+        print("Mega scope check unavailable: current directory is not inside a git repository.")
+        print(f"- planned files: {len(planned)}")
+        if planned:
+            print("- planned files from plan:")
+            for path in sorted(planned):
+                print(f"  - {path}")
+        print("Fallback evidence: list generated artifacts, record hashes or file sizes, and attach render/readback checks with mega_evidence.py.")
+        return 2
+
     changed = {normalize(p) for p in git_changed_files(args.staged)}
     unplanned = sorted(changed - planned) if planned else sorted(changed)
     untouched_planned = sorted(planned - changed)

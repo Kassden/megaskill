@@ -25,6 +25,15 @@ CONFIG_NAMES = {
 GENERATED_HINTS = {"lock", "dist", "build", "generated", ".snap"}
 
 
+def in_git_repo() -> bool:
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        text=True,
+        capture_output=True,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
 def run_git(args: list[str]) -> str:
     result = subprocess.run(["git", *args], text=True, capture_output=True)
     if result.returncode != 0:
@@ -63,6 +72,11 @@ def main() -> int:
     parser.add_argument("--max-top-levels", type=int, default=3)
     parser.add_argument("--allow-mixed", action="store_true")
     args = parser.parse_args()
+
+    if not in_git_repo():
+        print("Mega commit check unavailable: current directory is not inside a git repository.")
+        print("Fallback evidence: list changed/generated artifacts, record hashes or file sizes, and attach render/readback checks with mega_evidence.py.")
+        return 2
 
     files = staged_files()
     if not files:
