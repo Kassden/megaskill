@@ -11,8 +11,12 @@ Megaskill Handoff
 - Intentionally untouched:
 - Verified surfaces:
 - Verification evidence:
+- Tooling installed or repaired:
+- Retry/fallback attempts:
+- Checks not run and blocker class:
 - Deployment/push evidence:
 - Real-result check:
+- Next executable step already taken?:
 - Unverified or partially verified:
 - Scope expansion:
 - Measured damage radius:

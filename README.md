@@ -6,7 +6,7 @@
   <a href="https://github.com/Kassden/megaskill/watchers"><img alt="GitHub watchers" src="https://img.shields.io/github/watchers/Kassden/megaskill?style=for-the-badge&logo=github"></a>
   <img alt="Repo size" src="https://img.shields.io/github/repo-size/Kassden/megaskill?style=for-the-badge">
   <a href="https://tokei.kojix2.net/github/Kassden/megaskill"><img alt="Lines of code" src="https://img.shields.io/endpoint?style=for-the-badge&url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FKassden%2Fmegaskill%2Flines"></a>
-  <img alt="Files" src="https://img.shields.io/badge/Files-13-blue?style=for-the-badge">
+  <img alt="Files" src="https://img.shields.io/badge/Files-20-blue?style=for-the-badge">
   <img alt="Languages" src="https://img.shields.io/github/languages/count/Kassden/megaskill?style=for-the-badge">
   <img alt="Top language" src="https://img.shields.io/github/languages/top/Kassden/megaskill?style=for-the-badge">
   <a href="https://github.com/Kassden/megaskill/commits/main"><img alt="Commits" src="https://img.shields.io/github/commit-activity/t/Kassden/megaskill?style=for-the-badge"></a>
@@ -27,12 +27,18 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 ## What It Provides
 
 - Goal locking with acceptance criteria and out-of-scope boundaries.
-- Plan validation for phases, subphases, tests, success criteria, planned touch files, and checklist items.
+- Plan validation for dependency/tooling preflight, phases, subphases, tests, success criteria, planned touch files, and checklist items.
 - Regression guardrail prompts before file edits.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
 - Evidence recording for verification commands.
 - Final handoff structure with a clear `done`, `blocked`, or `not done` verdict.
+
+## Autonomy Rule
+
+Missing verification tooling is setup work, not a reason to skip relevant checks. If the requested work needs a verification surface, Megaskill expects the agent to install or repair project-local tooling and continue.
+
+For UI, visual, browser, canvas, 3D, or game work, use the repo's existing browser-test stack or add project-local Playwright tooling when absent, install required browser binaries, and run the browser smoke, screenshot, visual, or pixel checks that match the change. Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive-action boundary, or product decision that cannot be inferred.
 
 ## Execution Loop
 
@@ -179,6 +185,21 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 - Official / standards sources:
   - Check framework docs for cache invalidation and runtime constraints if a built-in cache is used.
   - Check existing project docs for data privacy, tenancy, or authorization rules.
+
+## Dependency and Tooling Preflight
+- Required verification tools:
+  - Existing project test runner.
+  - TypeScript typecheck.
+  - Local API smoke tool such as `curl` if the app exposes a dev server.
+- Existing tooling found:
+  - To be filled after reading `package.json` and existing test files.
+- Install or repair commands:
+  - Use the repo package manager to install missing declared dependencies.
+  - Add narrowly scoped project-local test dependencies only when the required proof surface is absent.
+- Browser/runtime binaries:
+  - Not required unless the cache behavior is exposed through browser-only UI behavior.
+- Real blockers that would prevent setup:
+  - Missing credentials, denied dependency-install approval, incompatible platform, or external package registry outage.
 
 ## Regression Guardrails
 - Planned edit surface:

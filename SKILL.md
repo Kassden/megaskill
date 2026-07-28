@@ -19,7 +19,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 2. **Create or validate the plan**
    - Use `scripts/mega_plan_init.py` to generate a plan skeleton when no canonical plan exists.
    - Use `scripts/mega_plan_check.py <plan.md>` before executing from a plan.
-   - The plan must have phases, subphases, commit lines, tests, success criteria, and checklist items.
+   - The plan must have dependency/tooling preflight, phases, subphases, commit lines, tests, success criteria, and checklist items.
    - For lower-level agents, make every subphase decision-complete: exact objective, files or systems to inspect, allowed edit surface, verification command, and handoff criteria.
 
 3. **Declare regression guardrails before edits**
@@ -40,6 +40,10 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Do not perform unrelated cleanup.
 
 5. **Verify and commit atomically**
+   - Missing verification tooling is setup work, not a skip reason.
+   - If the work requires a verification surface, install or repair project-local tooling when absent.
+   - For UI/browser-facing work, install or repair Playwright and browser binaries when needed, then run browser smoke, screenshot, visual, or canvas checks that match the change.
+   - Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive action boundary, or an unresolved product decision.
    - Run the subphase tests/checks.
    - Record important checks with `scripts/mega_evidence.py`.
    - Stage only the coherent unit.
@@ -49,7 +53,8 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 6. **Continue, do not hand off**
    - Continue into the next obvious machine-executable step.
    - Push/deploy/smoke test when available and implied.
-   - Stop only for a real blocker: missing credentials, approval boundary, destructive action, unavailable external service, conflicting instructions, or a product decision that cannot be inferred.
+   - Stop only for a real blocker: missing credentials, approval boundary, destructive action, unavailable external service, incompatible platform, conflicting instructions, or a product decision that cannot be inferred.
+   - Do not call work done with "tool not installed" unless installation was attempted and failed for a real blocker.
 
 7. **Finish with evidence**
    - Do not call work done without evidence against the goal.
