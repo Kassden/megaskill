@@ -292,11 +292,28 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton. |
-| `scripts/mega_plan_check.py` | Validates plan structure before execution. |
-| `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes. |
-| `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit. |
+| `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with dependency/tooling preflight. |
+| `scripts/mega_plan_check.py` | Validates plan structure, required tooling preflight, UI/browser proof, and skip-on-missing-tooling loopholes. |
+| `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes; reports artifact-evidence fallback outside Git repos. |
+| `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_evidence.py` | Records and summarizes verification evidence. |
+
+## Validation
+
+Run the bundled checks from the Megaskill folder:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/*.py tests/*.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+```
+
+The tests cover:
+
+- valid generated plans passing `mega_plan_check.py`
+- missing dependency/tooling preflight failing validation
+- UI plans without browser proof failing validation
+- Playwright availability loopholes failing validation
+- non-Git scope and commit helpers returning clear fallback evidence guidance
 
 ## Skill Files
 
