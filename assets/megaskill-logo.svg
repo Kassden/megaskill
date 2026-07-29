@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1340 300">
+  <title id="title">Megaskill logo</title>
+  <desc id="desc">A dark GitHub banner with MEGASKILL drawn in a CAD-style monoline circuit font.</desc>
+  <rect width="1340" height="300" rx="10" fill="#0f1620"/>
+  <g fill="none" stroke="#f3f7fb" stroke-width="13" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M88 82h20v24h24v-24h44v24h24v-24h20v126h-28v-82h-24v58h-28v-58h-24v82H88z"/>
+    <path d="M258 82h124v28h-92v20h78v28h-78v22h92v28H258z"/>
+    <path d="M420 82h118v28h-90v70h62v-28h-34v-26h62v82H420z"/>
+    <path d="M576 208l52-126h36l52 126h-34l-8-24h-58l-8 24zM626 156h38l-18-50z"/>
+    <path d="M756 82h122v28h-90v20h66q24 0 24 24v30q0 24-24 24h-98v-28h90v-22h-66q-24 0-24-24z"/>
+    <path d="M914 82h32v48h28l38-48h38l-52 62 58 64h-40l-42-50h-28v50h-32z"/>
+    <path d="M1092 82h32v126h-32z"/>
+    <path d="M1164 82h32v98h88v28h-120z"/>
+    <path d="M1314 82h32v98h88v28h-120z" transform="translate(-118 0)"/>
+  </g>
+  <g fill="none" stroke="#7f8ea3" stroke-width="3" stroke-linecap="square" opacity=".9">
+    <path d="M108 52v30M132 52v30M176 52v30M200 52v30M258 52v30M382 110h28M538 110h28M878 110h26M1012 82h26M1124 208v30M1196 208v30"/>
+    <path d="M92 228h128M258 228h124M420 228h118M756 228h122M914 228h142M1092 228h192"/>
+  </g>
+  <g fill="#f3f7fb">
+    <rect x="84" y="48" width="28" height="24"/>
+    <rect x="128" y="48" width="28" height="24"/>
+    <rect x="172" y="48" width="28" height="24"/>
+    <rect x="196" y="208" width="28" height="24"/>
+    <rect x="254" y="48" width="34" height="24"/>
+    <rect x="378" y="208" width="28" height="24"/>
+    <rect x="416" y="48" width="34" height="24"/>
+    <rect x="510" y="126" width="32" height="24"/>
+    <rect x="752" y="48" width="34" height="24"/>
+    <rect x="846" y="208" width="32" height="24"/>
+    <rect x="910" y="48" width="32" height="24"/>
+    <rect x="1010" y="48" width="32" height="24"/>
+    <rect x="1088" y="48" width="34" height="24"/>
+    <rect x="1160" y="208" width="34" height="24"/>
+    <rect x="1278" y="208" width="34" height="24"/>
+  </g>
+  <text x="670" y="266" text-anchor="middle" fill="#f3f7fb" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="21" font-weight="600">A high-rigor execution skill for AI coding agents</text>
+</svg>
