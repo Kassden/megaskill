@@ -1,8 +1,15 @@
 # Megaskill
 
-<p align="center">
-  <img alt="Megaskill logo" src="assets/megaskill-logo.svg">
-</p>
+<pre align="center">
+███╗   ███╗███████╗ ██████╗  █████╗ ███████╗██╗  ██╗██╗██╗     ██╗     
+████╗ ████║██╔════╝██╔════╝ ██╔══██╗██╔════╝██║ ██╔╝██║██║     ██║     
+██╔████╔██║█████╗  ██║  ███╗███████║███████╗█████╔╝ ██║██║     ██║     
+██║╚██╔╝██║██╔══╝  ██║   ██║██╔══██║╚════██║██╔═██╗ ██║██║     ██║     
+██║ ╚═╝ ██║███████╗╚██████╔╝██║  ██║███████║██║  ██╗██║███████╗███████╗
+╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝
+</pre>
+
+<p align="center"><strong>A high-rigor execution skill for AI coding agents</strong></p>
 
 <p align="center">
   <a href="https://github.com/Kassden/megaskill/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Kassden/megaskill?style=for-the-badge&logo=github"></a>
@@ -10,7 +17,7 @@
   <a href="https://github.com/Kassden/megaskill/watchers"><img alt="GitHub watchers" src="https://img.shields.io/github/watchers/Kassden/megaskill?style=for-the-badge&logo=github"></a>
   <img alt="Repo size" src="https://img.shields.io/github/repo-size/Kassden/megaskill?style=for-the-badge">
   <a href="https://tokei.kojix2.net/github/Kassden/megaskill"><img alt="Lines of code" src="https://img.shields.io/endpoint?style=for-the-badge&url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2FKassden%2Fmegaskill%2Flines"></a>
-  <img alt="Files" src="https://img.shields.io/badge/Files-21-blue?style=for-the-badge">
+  <img alt="Files" src="https://img.shields.io/badge/Files-20-blue?style=for-the-badge">
   <img alt="Languages" src="https://img.shields.io/github/languages/count/Kassden/megaskill?style=for-the-badge">
   <img alt="Top language" src="https://img.shields.io/github/languages/top/Kassden/megaskill?style=for-the-badge">
   <a href="https://github.com/Kassden/megaskill/commits/main"><img alt="Commits" src="https://img.shields.io/github/commit-activity/t/Kassden/megaskill?style=for-the-badge"></a>
