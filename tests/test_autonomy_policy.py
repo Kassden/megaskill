@@ -47,6 +47,12 @@ class AutonomyPolicyTests(unittest.TestCase):
         errors = module.validate(text)
         self.assertIn("missing required section: ## Generality Guardrail", errors)
 
+    def test_sheet_created_without_write_fixture_fails(self):
+        module = load_module()
+        text = (FIXTURES / "sheet-created-without-write-bad.md").read_text(encoding="utf-8")
+        errors = module.validate(text)
+        self.assertTrue(any("creation/copy/routing" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

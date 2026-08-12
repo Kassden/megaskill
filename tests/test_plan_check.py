@@ -34,6 +34,14 @@ def valid_plan() -> str:
 - Off-the-shelf options: use Playwright.
 - Official / standards sources: check framework docs.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: deterministic browser smoke with screenshots for UI proof.
+- Official docs, standards, specs, or platform guidance: Playwright and framework docs.
+- Mature libraries, frameworks, or built-in mechanisms: Playwright test runner.
+- Best-practice constraints to integrate: stable fixtures and user-observable assertions.
+- Rejected approaches: manual screenshots without assertions.
+- Implementation decision: use Playwright browser smoke.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: Playwright browser smoke and screenshots.
 - Existing tooling found: none yet.
@@ -48,6 +56,14 @@ def valid_plan() -> str:
 - User-observable assertions: panel title and status are visible.
 - Command: npx playwright test.
 - Evidence to record: Playwright output and screenshot.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: dashboard route renders changed UI.
+- Required write/mutation operation: update route code.
+- Readback surface: browser screenshot and DOM assertion.
+- Expected content, rows, fields, counts, or behavior: visible panel status assertion.
+- Command or tool call evidence: npx playwright test.
+- Not-done conditions: route-only proof without visible assertion.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: moderate UI attack scope.
@@ -106,6 +122,21 @@ class PlanCheckTests(unittest.TestCase):
         errors = module.validate(text)
         self.assertIn("missing required section: ## Dependency and Tooling Preflight", errors)
 
+    def test_missing_sota_standards_section_fails(self):
+        module = load_module()
+        text = valid_plan().replace(
+            "## SOTA, Standards, And Best Practices\n"
+            "- Current SOTA / prior art: deterministic browser smoke with screenshots for UI proof.\n"
+            "- Official docs, standards, specs, or platform guidance: Playwright and framework docs.\n"
+            "- Mature libraries, frameworks, or built-in mechanisms: Playwright test runner.\n"
+            "- Best-practice constraints to integrate: stable fixtures and user-observable assertions.\n"
+            "- Rejected approaches: manual screenshots without assertions.\n"
+            "- Implementation decision: use Playwright browser smoke.\n\n",
+            "",
+        )
+        errors = module.validate(text)
+        self.assertIn("missing required section: ## SOTA, Standards, And Best Practices", errors)
+
     def test_ui_plan_without_browser_proof_fails(self):
         module = load_module()
         text = valid_plan().replace("Playwright browser smoke and screenshots", "unit tests")
@@ -136,6 +167,25 @@ class PlanCheckTests(unittest.TestCase):
         )
         errors = module.validate(text)
         self.assertIn("missing required section: ## Deterministic Real-User Test", errors)
+
+    def test_creation_without_write_and_readback_fails(self):
+        module = load_module()
+        text = valid_plan().replace(
+            "- Requested final user-visible result: dashboard route renders changed UI.\n"
+            "- Required write/mutation operation: update route code.\n"
+            "- Readback surface: browser screenshot and DOM assertion.\n"
+            "- Expected content, rows, fields, counts, or behavior: visible panel status assertion.\n"
+            "- Command or tool call evidence: npx playwright test.\n"
+            "- Not-done conditions: route-only proof without visible assertion.",
+            "- Requested final user-visible result: created a new sheet.\n"
+            "- Required write/mutation operation: create the sheet from template.\n"
+            "- Readback surface: Drive export.\n"
+            "- Expected content, rows, fields, counts, or behavior: exported CSV opens.\n"
+            "- Command or tool call evidence: googleDriveWorkflow.\n"
+            "- Not-done conditions: missing sheet link.",
+        )
+        errors = module.validate(text)
+        self.assertTrue(any("creation/copy/routing" in error for error in errors))
 
     def test_happy_path_only_fails(self):
         module = load_module()
