@@ -35,6 +35,18 @@ class AutonomyPolicyTests(unittest.TestCase):
         self.assertIn("Fallback evidence", text)
         self.assertIn("record hashes or file sizes", text)
 
+    def test_happy_path_armageddon_fixture_fails(self):
+        module = load_module()
+        text = (FIXTURES / "armageddon-happy-path-bad.md").read_text(encoding="utf-8")
+        errors = module.validate(text)
+        self.assertTrue(any("weak verification language" in error for error in errors))
+
+    def test_missing_generality_fixture_fails(self):
+        module = load_module()
+        text = (FIXTURES / "generality-missing-bad.md").read_text(encoding="utf-8")
+        errors = module.validate(text)
+        self.assertIn("missing required section: ## Generality Guardrail", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

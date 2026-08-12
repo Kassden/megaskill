@@ -41,6 +41,30 @@ def valid_plan() -> str:
 - Browser/runtime binaries: Chromium.
 - Real blockers that would prevent setup: approval, credential, external outage, incompatible platform.
 
+## Deterministic Real-User Test
+- Entry point: `/dashboard`.
+- User workflow: load dashboard and open the primary panel.
+- Stable inputs or fixtures: recorded fixture data.
+- User-observable assertions: panel title and status are visible.
+- Command: npx playwright test.
+- Evidence to record: Playwright output and screenshot.
+
+## Armageddon Mode
+- Damage-scaled attack scope: moderate UI attack scope.
+- Edge cases to try: narrow viewport, long text, empty fixture, failed network.
+- Failure modes to simulate: disabled controls and network error.
+- Optimization opportunities to inspect: repeated requests and layout churn.
+- Must-fix threshold: broken primary workflow, console error, or overlapping text.
+- Evidence to record: screenshots, console logs, and test output.
+
+## Generality Guardrail
+- Existing mechanism to reuse: existing dashboard test helpers.
+- Similar existing use cases: other dashboard route smoke tests.
+- Recurrence likelihood: high for future UI workflows.
+- General mechanism to create if none exists: shared Playwright smoke helper.
+- Specific use case implementation through the mechanism: dashboard route uses shared helper.
+- One-off justification, if any: none.
+
 ## Regression Guardrails
 - Planned edit surface:
   - `src/page.tsx`
@@ -97,6 +121,27 @@ class PlanCheckTests(unittest.TestCase):
         text = valid_plan() + "\n- Use Playwright only if already available; otherwise use Node probes.\n"
         errors = module.validate(text)
         self.assertTrue(any("verification loophole" in error for error in errors))
+
+    def test_missing_deterministic_user_test_fails(self):
+        module = load_module()
+        text = valid_plan().replace(
+            "## Deterministic Real-User Test\n"
+            "- Entry point: `/dashboard`.\n"
+            "- User workflow: load dashboard and open the primary panel.\n"
+            "- Stable inputs or fixtures: recorded fixture data.\n"
+            "- User-observable assertions: panel title and status are visible.\n"
+            "- Command: npx playwright test.\n"
+            "- Evidence to record: Playwright output and screenshot.\n\n",
+            "",
+        )
+        errors = module.validate(text)
+        self.assertIn("missing required section: ## Deterministic Real-User Test", errors)
+
+    def test_happy_path_only_fails(self):
+        module = load_module()
+        text = valid_plan() + "\n- Verification is happy path only.\n"
+        errors = module.validate(text)
+        self.assertTrue(any("weak verification language" in error for error in errors))
 
     def test_plan_init_output_passes_plan_check(self):
         with tempfile.TemporaryDirectory() as tmp:
