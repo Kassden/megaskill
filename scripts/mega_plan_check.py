@@ -47,12 +47,36 @@ GENERALITY_RE = re.compile(
     r"\b(existing mechanism|general mechanism|similar existing|recurrence|one-off justification|specific use case)\b",
     re.IGNORECASE,
 )
+SOTA_RE = re.compile(
+    r"\b(sota|state of the art|prior art|official|standards?|specs?|platform guidance|best practices?|mature librar(?:y|ies)|frameworks?|built-?in|rejected approaches?|implementation decision)\b",
+    re.IGNORECASE,
+)
+FULFILLMENT_RE = re.compile(
+    r"\b(final user-visible result|user-visible result|artifact|record|deployment|external state|required write|mutation operation|readback surface|expected content|rows|fields|counts|behavior|tool call evidence|not-done conditions|not done conditions)\b",
+    re.IGNORECASE,
+)
 HAPPY_PATH_ONLY_RE = re.compile(
     r"\b(happy path only|only happy path|manual inspection only|no edge cases|skip armageddon)\b",
     re.IGNORECASE,
 )
 BESPOKE_WITHOUT_GENERALITY_RE = re.compile(
     r"\b(one-off|bespoke|specific to this one case|hard-?coded to this example)\b",
+    re.IGNORECASE,
+)
+CREATION_ONLY_RE = re.compile(
+    r"\b(created? (?:the |a |new )?(?:file|sheet|doc(?:ument)?|artifact|record|folder)|cop(?:y|ied) (?:the |a )?(?:template|file|sheet|doc(?:ument)?|artifact)|converted (?:the |a )?(?:template|file|sheet|doc(?:ument)?|artifact)|rout(?:e|ed) to (?:the )?(?:right|correct) tool)\b",
+    re.IGNORECASE,
+)
+WRITE_MUTATION_RE = re.compile(
+    r"\b(write|wrote|update|updated|mutation|mutate|populate|insert|upsert|import|export|deploy|sync|index|send)\b",
+    re.IGNORECASE,
+)
+READBACK_ASSERTION_RE = re.compile(
+    r"\b(readback|read back|export|compare|assert|verify|verified|expected content|rows?|fields?|counts?|totals?|behavior|side effect|side-effect)\b",
+    re.IGNORECASE,
+)
+CONTENT_ASSERTION_RE = re.compile(
+    r"\b(content|rows?|fields?|counts?|totals?|values?|formulas?|status|metadata|behavior|clauses?|tables?|assertions?)\b",
     re.IGNORECASE,
 )
 
@@ -77,6 +101,12 @@ def has_checklist(body: str) -> bool:
     return bool(re.search(r"^\s*-\s+\[[ xX]\]\s+\S", body, re.MULTILINE))
 
 
+def field_value(body: str, label: str) -> str:
+    pattern = rf"^\s*-\s+{re.escape(label)}:\s*(.+)$"
+    match = re.search(pattern, body, re.MULTILINE | re.IGNORECASE)
+    return match.group(1).strip() if match else ""
+
+
 def validate(text: str) -> list[str]:
     errors: list[str] = []
     if not re.search(r"^#\s+\S", text, re.MULTILINE):
@@ -84,8 +114,10 @@ def validate(text: str) -> list[str]:
     for required in [
         "## GOAL",
         "## Research",
+        "## SOTA, Standards, And Best Practices",
         "## Dependency and Tooling Preflight",
         "## Deterministic Real-User Test",
+        "## Fulfillment and Readback Proof",
         "## Armageddon Mode",
         "## Generality Guardrail",
     ]:
@@ -117,19 +149,27 @@ def validate(text: str) -> list[str]:
             errors.append(f"{section.heading} has no checklist items")
 
     tooling_section = ""
+    sota_section = ""
     deterministic_section = ""
+    fulfillment_section = ""
     armageddon_section = ""
     generality_section = ""
     sections = split_sections(text)
     for section in sections:
         if section.heading == "## Dependency and Tooling Preflight":
             tooling_section = section.body
+        elif section.heading == "## SOTA, Standards, And Best Practices":
+            sota_section = section.body
         elif section.heading == "## Deterministic Real-User Test":
             deterministic_section = section.body
+        elif section.heading == "## Fulfillment and Readback Proof":
+            fulfillment_section = section.body
         elif section.heading == "## Armageddon Mode":
             armageddon_section = section.body
         elif section.heading == "## Generality Guardrail":
             generality_section = section.body
+    if sota_section and not SOTA_RE.search(sota_section):
+        errors.append("## SOTA, Standards, And Best Practices must document prior art, official docs/standards, mature libraries, best practices, rejected approaches, or implementation decision")
     if tooling_section:
         if not TOOLING_INSTALL_RE.search(tooling_section) and not REAL_BLOCKER_RE.search(tooling_section):
             errors.append("## Dependency and Tooling Preflight must name install/repair commands, no-install rationale, or real blockers")
@@ -138,6 +178,8 @@ def validate(text: str) -> list[str]:
     if deterministic_section:
         if USER_SURFACE_RE.search(text) and not DETERMINISTIC_RE.search(deterministic_section):
             errors.append("## Deterministic Real-User Test must name entry point, workflow, stable inputs/fixtures, observable assertions, or command")
+    if fulfillment_section and not FULFILLMENT_RE.search(fulfillment_section):
+        errors.append("## Fulfillment and Readback Proof must name final result, required write/mutation, readback surface, expected content/counts/behavior, evidence, or not-done conditions")
     if armageddon_section and not ARMAGEDDON_RE.search(armageddon_section):
         errors.append("## Armageddon Mode must name edge cases, failure modes, attack scope, optimization opportunities, or must-fix threshold")
     if generality_section and not GENERALITY_RE.search(generality_section):
@@ -148,6 +190,20 @@ def validate(text: str) -> list[str]:
         errors.append("plan contains weak verification language such as happy-path-only, manual-inspection-only, or skipped Armageddon checks")
     if BESPOKE_WITHOUT_GENERALITY_RE.search(text) and not generality_section:
         errors.append("plan mentions bespoke/one-off behavior but lacks ## Generality Guardrail")
+    if CREATION_ONLY_RE.search(text) and fulfillment_section:
+        write_value = field_value(fulfillment_section, "Required write/mutation operation")
+        readback_value = field_value(fulfillment_section, "Readback surface")
+        expected_value = field_value(fulfillment_section, "Expected content, rows, fields, counts, or behavior")
+        if (
+            not WRITE_MUTATION_RE.search(write_value)
+            or not READBACK_ASSERTION_RE.search(readback_value)
+            or not CONTENT_ASSERTION_RE.search(expected_value)
+        ):
+            errors.append("plan mentions creation/copy/routing but ## Fulfillment and Readback Proof lacks write/mutation plus readback/content assertions")
+    elif CREATION_ONLY_RE.search(text) and not fulfillment_section:
+        errors.append(
+            "plan mentions creation/copy/routing but ## Fulfillment and Readback Proof lacks write/mutation plus readback/content assertions"
+        )
     return errors
 
 
