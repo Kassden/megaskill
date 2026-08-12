@@ -18,6 +18,30 @@
 - Browser/runtime binaries: none.
 - Real blockers that would prevent setup: approval.
 
+## Deterministic Real-User Test
+- Entry point: `/`.
+- User workflow: load dashboard.
+- Stable inputs or fixtures: recorded API fixture.
+- User-observable assertions: dashboard status visible.
+- Command: node scripts/benchmark.mjs.
+- Evidence to record: benchmark output.
+
+## Armageddon Mode
+- Damage-scaled attack scope: moderate dashboard attack scope.
+- Edge cases to try: empty data and narrow viewport.
+- Failure modes to simulate: failed status request.
+- Optimization opportunities to inspect: repeated requests.
+- Must-fix threshold: broken dashboard render.
+- Evidence to record: benchmark output.
+
+## Generality Guardrail
+- Existing mechanism to reuse: benchmark helper.
+- Similar existing use cases: dashboard query audits.
+- Recurrence likelihood: high.
+- General mechanism to create if none exists: shared request counter.
+- Specific use case implementation through the mechanism: dashboard benchmark.
+- One-off justification, if any: none.
+
 ## Regression Guardrails
 - Planned edit surface:
   - `scripts/benchmark.mjs`
