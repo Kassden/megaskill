@@ -50,6 +50,84 @@ Examples:
 
 Do not use "not installed", "not configured", or "no test script" as final verification reasons unless setup was attempted, rejected by approval policy, or blocked by credentials, platform incompatibility, destructive-action boundaries, or an external outage.
 
+## Deterministic Real-User Experience Test
+
+For any interface, app, CLI, tool, workflow, agent surface, or user-facing path, first create or run a deterministic real-user experience test before broader verification.
+
+A deterministic real-user experience test must:
+
+- start from the user's actual entry point
+- perform the core workflow as a real user would
+- use stable seeded inputs, recorded fixtures, or deterministic local state
+- assert user-observable outcomes, not only internals
+- run repeatably without timing luck
+- record evidence with `scripts/mega_evidence.py`
+
+Examples:
+
+- Web app: route entry -> user action -> visible UI result, verified with Playwright or the repo's browser-test equivalent.
+- CLI/tool: command plus fixture input -> exact stdout/stderr/exit code.
+- API-backed tool: request fixture -> exact response shape and side-effect/readback check.
+- Docs/artifact: source -> render/open/readback evidence.
+- Agent/tool workflow: task fixture -> deterministic structured result or output contract.
+
+## Armageddon Mode
+
+Armageddon mode is an adversarial verification pass. It tries to break the result, expose weaknesses, and identify optimization opportunities before final handoff.
+
+Scale Armageddon by damage radius:
+
+- Small: 3-5 adversarial checks against the changed surface.
+- Moderate: changed surface plus one adjacent consumer or workflow.
+- Large/Systemic: full adversarial pass across entry points, contracts, and live/deploy surfaces where available.
+
+Use the relevant attack list:
+
+- UI/app: mobile, narrow, desktop, long text, empty data, loading, error, disabled states, repeated clicks, reload/back/forward, console errors, failed network calls, keyboard-only path where relevant, screenshots.
+- CLI/tool: `--help`, missing args, invalid args, malformed input, empty input, large input when cheap, wrong cwd, missing config/env, repeated run/idempotency.
+- API/backend: missing fields, wrong types, unknown fields, empty arrays, oversized input, unauthorized request, wrong tenant/user ID, replay/idempotency, downstream failure when practical, stable error shape.
+- Data/query: empty result, duplicates, missing fields, timezone/boundary dates, very old/new dates, count/shape checks.
+- Deploy/live: route smoke, API smoke, auth/protection caveat, stale deployment check, rollback awareness.
+
+Armageddon output must name:
+
+- surface attacked
+- weaknesses found
+- bugs found
+- optimization opportunities
+- edge cases tried
+- evidence
+- must-fix-before-done items
+- safe-to-defer items
+
+## Generality Guardrail
+
+Before implementing, check whether the request is one instance of a broader repeated pattern.
+
+Do not create one-off tools, routes, scripts, prompts, fixtures, UI components, validators, or services when a general mechanism should own the behavior.
+
+Prefer a general mechanism when:
+
+- two or more similar things already exist
+- the new thing duplicates behavior with different names
+- the use case is likely to recur
+- future agents or users would not know which duplicate to use
+- the solution would create a parallel workflow
+
+Rules:
+
+- Use the existing general mechanism when one exists.
+- If no general mechanism exists and recurrence is likely, create the general mechanism first.
+- Implement the specific request through that general mechanism.
+- Only make a one-off when the use case is truly isolated, low-risk, and unlikely to recur.
+- Document why a one-off is acceptable if choosing one.
+
+Forbidden:
+
+- Do not hard-code to the pasted example when the user is asking for a reusable tool, workflow, service, or test surface.
+- Do not add a bespoke helper if a shared helper should own it.
+- Do not create many narrow variants that do the same thing.
+
 ## Verification Matrix
 
 Choose proof by work type before editing:
@@ -67,6 +145,10 @@ Choose proof by work type before editing:
 | Deploy/live URL | Build/deploy status plus live URL or API smoke, with auth caveats stated precisely. |
 | Live device/production | Read-only probe first; write/switch actions require explicit approval and rollback awareness. |
 
+For interface, app, CLI, tool, workflow, and user-facing work, this proof floor is in addition to the deterministic real-user experience test.
+
+For high-risk, API/backend, UI/app, CLI/tool, data/query, deploy/live, and production-adjacent work, include an Armageddon pass scaled to the damage radius.
+
 ## Execution Loop
 
 For each subphase:
@@ -74,13 +156,14 @@ For each subphase:
 1. Re-read the plan.
 2. Confirm the subphase goal and edit surface.
 3. Implement only that unit.
-4. Run the declared tests.
-5. Record evidence.
-6. Check scope drift.
-7. Stage only that unit.
-8. Check atomicity.
-9. Commit when commits are in scope.
-10. Continue to the next executable subphase.
+4. Run the deterministic real-user test when relevant.
+5. Run the declared tests and Armageddon checks.
+6. Record evidence.
+7. Check scope drift.
+8. Stage only that unit.
+9. Check atomicity.
+10. Commit when commits are in scope.
+11. Continue to the next executable subphase.
 
 ## Real Blockers
 

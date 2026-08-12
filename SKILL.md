@@ -19,7 +19,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 2. **Create or validate the plan**
    - Use `scripts/mega_plan_init.py` to generate a plan skeleton when no canonical plan exists.
    - Use `scripts/mega_plan_check.py <plan.md>` before executing from a plan.
-   - The plan must have dependency/tooling preflight, phases, subphases, commit lines, tests, success criteria, and checklist items.
+   - The plan must have dependency/tooling preflight, deterministic real-user test, Armageddon mode, generality guardrail, phases, subphases, commit lines, tests, success criteria, and checklist items.
    - For lower-level agents, make every subphase decision-complete: exact objective, files or systems to inspect, allowed edit surface, verification command, and handoff criteria.
 
 3. **Declare regression guardrails before edits**
@@ -31,6 +31,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Proof plan.
    - Atomic change units.
    - Commit plan.
+   - Generality decision: reuse the existing general mechanism, create one if recurring behavior lacks a general owner, or justify a true one-off.
 
 4. **Execute one subphase at a time**
    - Re-read the plan before each subphase.
@@ -44,6 +45,8 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - If the work requires a verification surface, install or repair project-local tooling when absent.
    - For UI/browser-facing work, install or repair Playwright and browser binaries when needed, then run browser smoke, screenshot, visual, or canvas checks that match the change.
    - Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive action boundary, or an unresolved product decision.
+   - For interfaces, tools, apps, CLIs, workflows, or user-facing surfaces, run a deterministic real-user experience test before broader verification.
+   - Run Armageddon mode for interface/tool/app/API or high-risk work: adversarially attack edge cases, failures, bad inputs, and optimization opportunities.
    - Run the subphase tests/checks.
    - Record important checks with `scripts/mega_evidence.py`.
    - Stage only the coherent unit.

@@ -38,7 +38,7 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 ## What It Provides
 
 - Goal locking with acceptance criteria and out-of-scope boundaries.
-- Plan validation for dependency/tooling preflight, phases, subphases, tests, success criteria, planned touch files, and checklist items.
+- Plan validation for dependency/tooling preflight, deterministic real-user tests, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
 - Regression guardrail prompts before file edits.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
@@ -50,6 +50,16 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 Missing verification tooling is setup work, not a reason to skip relevant checks. If the requested work needs a verification surface, Megaskill expects the agent to install or repair project-local tooling and continue.
 
 For UI, visual, browser, canvas, 3D, or game work, use the repo's existing browser-test stack or add project-local Playwright tooling when absent, install required browser binaries, and run the browser smoke, screenshot, visual, or pixel checks that match the change. Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive-action boundary, or product decision that cannot be inferred.
+
+## Real-User And Armageddon Checks
+
+For interfaces, apps, tools, CLIs, workflows, and user-facing surfaces, Megaskill requires a deterministic real-user experience test before broader verification. The test starts from the user's actual entry point, performs the core workflow with stable inputs or fixtures, and asserts user-observable outcomes.
+
+Armageddon mode is the adversarial pass: it tears apart UI, APIs, tools, data paths, deploys, and workflows with bad inputs, edge states, repeated actions, failed dependencies, screenshots, console/network checks, error-shape checks, and optimization probes. Scale it to the damage radius before calling work done.
+
+## General-Solution Guardrail
+
+Before implementing, Megaskill checks whether the request is one instance of a broader pattern. Use the existing general mechanism when one exists. If no general mechanism exists and recurrence is likely, create the general mechanism first, then implement the specific request through it. Only choose a one-off when it is truly isolated, low-risk, and unlikely to recur.
 
 ## Execution Loop
 

@@ -11,6 +11,9 @@ Megaskill Handoff
 - Intentionally untouched:
 - Verified surfaces:
 - Verification evidence:
+- Deterministic real-user test:
+- Armageddon report:
+- Generality/anti-overfitting decision:
 - Tooling installed or repaired:
 - Retry/fallback attempts:
 - Checks not run and blocker class:
