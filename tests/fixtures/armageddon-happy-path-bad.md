@@ -11,6 +11,14 @@
 - Off-the-shelf options: none.
 - Official / standards sources: none.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: CLI tools should prove help, invalid input, and fixture behavior.
+- Official docs, standards, specs, or platform guidance: Python argparse and unittest docs.
+- Mature libraries, frameworks, or built-in mechanisms: Python unittest.
+- Best-practice constraints to integrate: exact exit code and stdout assertions.
+- Rejected approaches: manual inspection.
+- Implementation decision: use unittest and command fixtures.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: Python unittest.
 - Existing tooling found: unittest.
@@ -25,6 +33,14 @@
 - User-observable assertions: stdout and exit code.
 - Command: python3 tool.py fixture.json.
 - Evidence to record: command output.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: CLI prints expected output.
+- Required write/mutation operation: write CLI file.
+- Readback surface: stdout and exit code.
+- Expected content, rows, fields, counts, or behavior: exact output text and zero exit.
+- Command or tool call evidence: python3 tool.py fixture.json.
+- Not-done conditions: created command without output assertion.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: happy path only.

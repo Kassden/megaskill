@@ -11,6 +11,14 @@
 - Off-the-shelf options: use Playwright.
 - Official / standards sources: check framework docs.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: deterministic browser smoke with screenshots for UI proof.
+- Official docs, standards, specs, or platform guidance: Playwright and framework docs.
+- Mature libraries, frameworks, or built-in mechanisms: Playwright test runner.
+- Best-practice constraints to integrate: stable fixtures and user-observable assertions.
+- Rejected approaches: manual screenshots without assertions.
+- Implementation decision: use Playwright browser smoke.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: Playwright browser smoke and screenshots.
 - Existing tooling found: none yet.
@@ -25,6 +33,14 @@
 - User-observable assertions: panel title and status are visible.
 - Command: npx playwright test.
 - Evidence to record: Playwright output and screenshot.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: dashboard route renders changed UI.
+- Required write/mutation operation: code update to route.
+- Readback surface: browser-rendered route screenshot and DOM assertion.
+- Expected content, rows, fields, counts, or behavior: panel title and status visible.
+- Command or tool call evidence: npx playwright test.
+- Not-done conditions: route-only proof without visible assertion.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: moderate UI attack scope.

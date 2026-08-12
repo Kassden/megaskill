@@ -11,6 +11,14 @@
 - Off-the-shelf options: none.
 - Official / standards sources: none.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: recurring scripts should use shared parser and fixture tests.
+- Official docs, standards, specs, or platform guidance: Python argparse and unittest docs.
+- Mature libraries, frameworks, or built-in mechanisms: current scripts and unittest.
+- Best-practice constraints to integrate: reusable workflow mechanism.
+- Rejected approaches: hard-coded one-off script.
+- Implementation decision: inspect shared script mechanisms first.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: Python unittest.
 - Existing tooling found: unittest.
@@ -25,6 +33,14 @@
 - User-observable assertions: stdout and exit code.
 - Command: python3 scripts/new_one_off.py fixture.json.
 - Evidence to record: command output.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: script output handles recurring workflow fixture.
+- Required write/mutation operation: write script behavior.
+- Readback surface: stdout and exit code.
+- Expected content, rows, fields, counts, or behavior: expected fields are emitted.
+- Command or tool call evidence: python3 scripts/new_one_off.py fixture.json.
+- Not-done conditions: created script without fixture readback.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: small CLI attack scope.

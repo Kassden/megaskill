@@ -11,6 +11,14 @@
 - Off-the-shelf options: Playwright only if already available; otherwise use Node probes.
 - Official / standards sources: Next.js cache docs.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: deterministic browser smoke with route assertions.
+- Official docs, standards, specs, or platform guidance: Next.js and Playwright docs.
+- Mature libraries, frameworks, or built-in mechanisms: Playwright when installed.
+- Best-practice constraints to integrate: stable browser-visible assertions.
+- Rejected approaches: manual inspection.
+- Implementation decision: browser proof is needed.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: browser smoke.
 - Existing tooling found: unknown.
@@ -25,6 +33,14 @@
 - User-observable assertions: dashboard status visible.
 - Command: node scripts/benchmark.mjs.
 - Evidence to record: benchmark output.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: benchmark report for dashboard behavior.
+- Required write/mutation operation: write benchmark script.
+- Readback surface: benchmark output.
+- Expected content, rows, fields, counts, or behavior: request counts are reported.
+- Command or tool call evidence: node scripts/benchmark.mjs.
+- Not-done conditions: created script without output assertion.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: moderate dashboard attack scope.

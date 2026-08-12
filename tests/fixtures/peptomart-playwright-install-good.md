@@ -11,6 +11,14 @@
 - Off-the-shelf options: Playwright.
 - Official / standards sources: Playwright install behavior.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art: deterministic browser smoke and responsive screenshots.
+- Official docs, standards, specs, or platform guidance: Playwright install docs and HTML/CSS standards.
+- Mature libraries, frameworks, or built-in mechanisms: Playwright and static browser rendering.
+- Best-practice constraints to integrate: visible assertions across desktop and mobile.
+- Rejected approaches: manual browser opening without assertions.
+- Implementation decision: install Playwright and Chromium locally.
+
 ## Dependency and Tooling Preflight
 - Required verification tools: Playwright browser smoke, screenshots, and Chromium.
 - Existing tooling found: package manifest without Playwright.
@@ -25,6 +33,14 @@
 - User-observable assertions: hero, navigation, and CTA are visible.
 - Command: npx playwright test.
 - Evidence to record: Playwright output and screenshots.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result: complete static landing page.
+- Required write/mutation operation: write HTML, CSS, and smoke test files.
+- Readback surface: browser-rendered page screenshot.
+- Expected content, rows, fields, counts, or behavior: hero, navigation, and CTA are visible.
+- Command or tool call evidence: npx playwright test.
+- Not-done conditions: created files without browser readback.
 
 ## Armageddon Mode
 - Damage-scaled attack scope: moderate landing-page attack scope.
