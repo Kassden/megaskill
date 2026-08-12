@@ -31,6 +31,30 @@ LOOPHOLE_RE = re.compile(
     r"\b(only if already available|if already available|otherwise use|skip(?:ped)? because .*not installed|not installed.*skip)\b",
     re.IGNORECASE,
 )
+USER_SURFACE_RE = re.compile(
+    r"\b(interface|app|cli|tool|workflow|user-facing|user facing|browser|ui|frontend|api|agent surface)\b",
+    re.IGNORECASE,
+)
+DETERMINISTIC_RE = re.compile(
+    r"\b(entry point|user workflow|stable inputs|fixtures|user-observable|observable assertions|command)\b",
+    re.IGNORECASE,
+)
+ARMAGEDDON_RE = re.compile(
+    r"\b(edge cases|failure modes|attack scope|must-fix|must fix|optimization opportunities|adversarial)\b",
+    re.IGNORECASE,
+)
+GENERALITY_RE = re.compile(
+    r"\b(existing mechanism|general mechanism|similar existing|recurrence|one-off justification|specific use case)\b",
+    re.IGNORECASE,
+)
+HAPPY_PATH_ONLY_RE = re.compile(
+    r"\b(happy path only|only happy path|manual inspection only|no edge cases|skip armageddon)\b",
+    re.IGNORECASE,
+)
+BESPOKE_WITHOUT_GENERALITY_RE = re.compile(
+    r"\b(one-off|bespoke|specific to this one case|hard-?coded to this example)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -57,7 +81,14 @@ def validate(text: str) -> list[str]:
     errors: list[str] = []
     if not re.search(r"^#\s+\S", text, re.MULTILINE):
         errors.append("missing top-level title (# Title)")
-    for required in ["## GOAL", "## Research", "## Dependency and Tooling Preflight"]:
+    for required in [
+        "## GOAL",
+        "## Research",
+        "## Dependency and Tooling Preflight",
+        "## Deterministic Real-User Test",
+        "## Armageddon Mode",
+        "## Generality Guardrail",
+    ]:
         if required not in text:
             errors.append(f"missing required section: {required}")
     phases = list(PHASE_RE.finditer(text))
@@ -86,18 +117,37 @@ def validate(text: str) -> list[str]:
             errors.append(f"{section.heading} has no checklist items")
 
     tooling_section = ""
+    deterministic_section = ""
+    armageddon_section = ""
+    generality_section = ""
     sections = split_sections(text)
     for section in sections:
         if section.heading == "## Dependency and Tooling Preflight":
             tooling_section = section.body
-            break
+        elif section.heading == "## Deterministic Real-User Test":
+            deterministic_section = section.body
+        elif section.heading == "## Armageddon Mode":
+            armageddon_section = section.body
+        elif section.heading == "## Generality Guardrail":
+            generality_section = section.body
     if tooling_section:
         if not TOOLING_INSTALL_RE.search(tooling_section) and not REAL_BLOCKER_RE.search(tooling_section):
             errors.append("## Dependency and Tooling Preflight must name install/repair commands, no-install rationale, or real blockers")
         if UI_RE.search(text) and not BROWSER_PROOF_RE.search(tooling_section):
             errors.append("UI/browser-facing plan must name browser smoke, Playwright, screenshot, visual, pixel, canvas, or accessibility proof")
+    if deterministic_section:
+        if USER_SURFACE_RE.search(text) and not DETERMINISTIC_RE.search(deterministic_section):
+            errors.append("## Deterministic Real-User Test must name entry point, workflow, stable inputs/fixtures, observable assertions, or command")
+    if armageddon_section and not ARMAGEDDON_RE.search(armageddon_section):
+        errors.append("## Armageddon Mode must name edge cases, failure modes, attack scope, optimization opportunities, or must-fix threshold")
+    if generality_section and not GENERALITY_RE.search(generality_section):
+        errors.append("## Generality Guardrail must document existing mechanism, recurrence, general mechanism decision, or one-off justification")
     if LOOPHOLE_RE.search(text):
         errors.append("plan contains verification loophole language such as 'only if already available' or skip-on-missing-tooling")
+    if HAPPY_PATH_ONLY_RE.search(text):
+        errors.append("plan contains weak verification language such as happy-path-only, manual-inspection-only, or skipped Armageddon checks")
+    if BESPOKE_WITHOUT_GENERALITY_RE.search(text) and not generality_section:
+        errors.append("plan mentions bespoke/one-off behavior but lacks ## Generality Guardrail")
     return errors
 
 
