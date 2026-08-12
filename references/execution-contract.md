@@ -15,6 +15,8 @@ Megaskill Guardrail
 - Proof plan:
 - Atomic units:
 - Commit plan:
+- SOTA/standards decision:
+- Fulfillment proof:
 ```
 
 ## Damage Radius
@@ -32,6 +34,26 @@ Scale proof to radius:
 - Moderate: direct check plus one adjacent flow.
 - Large: contract-aware checks plus build/integration where available.
 - Systemic: strongest available end-to-end or live verification plus rollback awareness.
+
+## SOTA, Standards, And Best-Practices Research
+
+Before building or adding a capability, research the current state of the art and the relevant standards for that kind of work.
+
+Required coverage:
+
+- Current SOTA or prior art for the feature, workflow, interface, integration, or testing method.
+- Official docs, standards, specs, protocol docs, platform guidance, or security/accessibility/performance rules that govern the work.
+- Mature libraries, frameworks, APIs, or built-in platform mechanisms that should be preferred over hand-rolled logic for well-known domains.
+- Best-practice constraints that will be integrated into the design and implementation.
+- Rejected approaches and why they are not the right fit.
+- The implementation decision that follows from the research.
+
+Rules:
+
+- Integrate selected standards and best practices into the implementation and tests; do not merely cite them.
+- Prefer established general mechanisms, official APIs, mature libraries, and project-standard patterns over bespoke solutions.
+- When network access is unavailable, use repo docs, installed package docs, and local source as the fallback, state the limitation, and refresh research when network access becomes available.
+- For high-risk domains such as auth, payments, medical, legal, financial, deployment, data migration, browser automation, or platform integrations, prefer primary sources such as official docs, standards, specs, and maintained project docs.
 
 ## Dependency And Tooling Preflight
 
@@ -70,6 +92,26 @@ Examples:
 - API-backed tool: request fixture -> exact response shape and side-effect/readback check.
 - Docs/artifact: source -> render/open/readback evidence.
 - Agent/tool workflow: task fixture -> deterministic structured result or output contract.
+
+## Fulfillment And Readback Proof
+
+Do not confuse progress with fulfillment. For output-producing workflows, Megaskill requires proof that the final user-visible result contains the requested content or side effect.
+
+Required when work creates, mutates, exports, deploys, emails, syncs, indexes, imports, transforms, routes through agent tools, or writes to an external system:
+
+- Name the requested final artifact, record, deployment, message, sheet, document, file, database row, API side effect, or user-visible state.
+- Name the required write or mutation operation, not just discovery, routing, copying, or creation.
+- Read back the final result through the same surface a user or downstream system would use when practical.
+- Compare the readback against expected content, rows, fields, counts, formulas, status, metadata, or acceptance criteria.
+- Treat missing write permissions, disabled APIs, failed mutation calls, partial exports, stale deployments, and template-only outputs as `not done` unless a real blocker prevents completion.
+
+Examples:
+
+- Google Sheet cost estimation: create/copy template -> extract quote rows -> call the sheet value update operation -> export/read the sheet -> assert quote-derived rows, totals, and expected columns are present.
+- Document generation: render/export -> open/read text -> assert required clauses, tables, and values exist.
+- Data import: run import -> query counts and sample rows -> assert dedupe and field mappings.
+- Agent workflow: tool route selected -> required mutation tool called -> final external artifact read back and compared.
+- Deployment: deploy -> verify commit served -> live route/API smoke proves changed behavior.
 
 ## Armageddon Mode
 
@@ -142,6 +184,7 @@ Choose proof by work type before editing:
 | CLI/script | `--help`, invalid input, fixture, and real-sample check. |
 | Docs/artifact | Render/open/readback check; file existence alone is insufficient. |
 | Data/query | Fixture or golden check plus query/count/shape verification. |
+| External write/tool workflow | Mutation call plus final readback of user-visible artifact or state; creation/copy/routing alone is insufficient. |
 | Deploy/live URL | Build/deploy status plus live URL or API smoke, with auth caveats stated precisely. |
 | Live device/production | Read-only probe first; write/switch actions require explicit approval and rollback awareness. |
 
@@ -157,13 +200,14 @@ For each subphase:
 2. Confirm the subphase goal and edit surface.
 3. Implement only that unit.
 4. Run the deterministic real-user test when relevant.
-5. Run the declared tests and Armageddon checks.
-6. Record evidence.
-7. Check scope drift.
-8. Stage only that unit.
-9. Check atomicity.
-10. Commit when commits are in scope.
-11. Continue to the next executable subphase.
+5. Run fulfillment/readback proof when the work produces or mutates an artifact, record, deployment, external system, or agent-tool result.
+6. Run the declared tests and Armageddon checks.
+7. Record evidence.
+8. Check scope drift.
+9. Stage only that unit.
+10. Check atomicity.
+11. Commit when commits are in scope.
+12. Continue to the next executable subphase.
 
 ## Real Blockers
 

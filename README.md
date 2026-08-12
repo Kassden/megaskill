@@ -38,7 +38,7 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 ## What It Provides
 
 - Goal locking with acceptance criteria and out-of-scope boundaries.
-- Plan validation for dependency/tooling preflight, deterministic real-user tests, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
+- Plan validation for SOTA/standards research, dependency/tooling preflight, deterministic real-user tests, fulfillment/readback proof, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
 - Regression guardrail prompts before file edits.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
@@ -51,9 +51,17 @@ Missing verification tooling is setup work, not a reason to skip relevant checks
 
 For UI, visual, browser, canvas, 3D, or game work, use the repo's existing browser-test stack or add project-local Playwright tooling when absent, install required browser binaries, and run the browser smoke, screenshot, visual, or pixel checks that match the change. Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive-action boundary, or product decision that cannot be inferred.
 
+## SOTA And Standards Rule
+
+When building or adding a capability, Megaskill requires current SOTA, standards, and best-practices research before design and implementation. The plan must cover prior art, official docs/specs/platform guidance, mature libraries or built-in mechanisms, best-practice constraints to integrate, rejected approaches, and the resulting implementation decision.
+
+The research is not decorative. The selected standard, official API, mature library, or project pattern must shape the implementation and tests.
+
 ## Real-User And Armageddon Checks
 
 For interfaces, apps, tools, CLIs, workflows, and user-facing surfaces, Megaskill requires a deterministic real-user experience test before broader verification. The test starts from the user's actual entry point, performs the core workflow with stable inputs or fixtures, and asserts user-observable outcomes.
+
+For artifact-producing and external-write workflows, Megaskill also requires fulfillment/readback proof. Creating a file, copying a template, routing to the right tool family, or returning a link is not enough. The plan must identify the required write or mutation operation, read back the final user-visible result, and compare the content, rows, fields, counts, behavior, or side effect against the acceptance criteria.
 
 Armageddon mode is the adversarial pass: it tears apart UI, APIs, tools, data paths, deploys, and workflows with bad inputs, edge states, repeated actions, failed dependencies, screenshots, console/network checks, error-shape checks, and optimization probes. Scale it to the damage radius before calling work done.
 
@@ -207,6 +215,21 @@ Use this shape when assigning work to a lower-level coding agent. The important 
   - Check framework docs for cache invalidation and runtime constraints if a built-in cache is used.
   - Check existing project docs for data privacy, tenancy, or authorization rules.
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art:
+  - Use a cache boundary close to the query service, with explicit key construction and TTL.
+- Official docs, standards, specs, or platform guidance:
+  - Framework caching/runtime docs and project authorization rules.
+- Mature libraries, frameworks, or built-in mechanisms:
+  - Existing cache helper or platform cache if already present.
+- Best-practice constraints to integrate:
+  - Include tenant/user identity and normalized query params in the key.
+  - Do not cache authorization failures.
+- Rejected approaches:
+  - Global in-memory cache without tenant isolation.
+- Implementation decision:
+  - Reuse the project cache utility and add response-shape tests.
+
 ## Dependency and Tooling Preflight
 - Required verification tools:
   - Existing project test runner.
@@ -221,6 +244,20 @@ Use this shape when assigning work to a lower-level coding agent. The important 
   - Not required unless the cache behavior is exposed through browser-only UI behavior.
 - Real blockers that would prevent setup:
   - Missing credentials, denied dependency-install approval, incompatible platform, or external package registry outage.
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result:
+  - Repeated identical authorized customer searches reuse cached results without response-shape changes.
+- Required write/mutation operation:
+  - Update the shared customer search service to use the project cache utility.
+- Readback surface:
+  - API response from cached and uncached requests.
+- Expected content, rows, fields, counts, or behavior:
+  - Same JSON shape, pagination, sorting, and authorization filtering.
+- Command or tool call evidence:
+  - Targeted tests and local API smoke when runnable.
+- Not-done conditions:
+  - Cache code exists but no response readback proves unchanged behavior.
 
 ## Regression Guardrails
 - Planned edit surface:
@@ -302,8 +339,8 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with dependency/tooling preflight. |
-| `scripts/mega_plan_check.py` | Validates plan structure, required tooling preflight, UI/browser proof, and skip-on-missing-tooling loopholes. |
+| `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with SOTA research, tooling preflight, real-user testing, fulfillment/readback proof, Armageddon, and generality guardrails. |
+| `scripts/mega_plan_check.py` | Validates plan structure, required SOTA/tooling/fulfillment sections, UI/browser proof, and skip-on-missing-tooling loopholes. |
 | `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_evidence.py` | Records and summarizes verification evidence. |
@@ -321,6 +358,8 @@ The tests cover:
 
 - valid generated plans passing `mega_plan_check.py`
 - missing dependency/tooling preflight failing validation
+- missing SOTA/standards research failing validation
+- artifact creation without write/readback proof failing validation
 - UI plans without browser proof failing validation
 - Playwright availability loopholes failing validation
 - non-Git scope and commit helpers returning clear fallback evidence guidance

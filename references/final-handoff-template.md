@@ -11,7 +11,9 @@ Megaskill Handoff
 - Intentionally untouched:
 - Verified surfaces:
 - Verification evidence:
+- SOTA / standards / best-practices applied:
 - Deterministic real-user test:
+- Fulfillment/readback proof:
 - Armageddon report:
 - Generality/anti-overfitting decision:
 - Tooling installed or repaired:

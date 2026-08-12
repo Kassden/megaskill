@@ -16,6 +16,14 @@ Use this shape for lower-level agent plans.
 - Off-the-shelf options:
 - Official / standards sources:
 
+## SOTA, Standards, And Best Practices
+- Current SOTA / prior art:
+- Official docs, standards, specs, or platform guidance:
+- Mature libraries, frameworks, or built-in mechanisms:
+- Best-practice constraints to integrate:
+- Rejected approaches:
+- Implementation decision:
+
 ## Dependency and Tooling Preflight
 - Required verification tools:
 - Existing tooling found:
@@ -30,6 +38,14 @@ Use this shape for lower-level agent plans.
 - User-observable assertions:
 - Command:
 - Evidence to record:
+
+## Fulfillment and Readback Proof
+- Requested final user-visible result:
+- Required write/mutation operation:
+- Readback surface:
+- Expected content, rows, fields, counts, or behavior:
+- Command or tool call evidence:
+- Not-done conditions:
 
 ## Armageddon Mode
 - Damage-scaled attack scope:
@@ -71,9 +87,10 @@ Rules:
 
 - Do not create a phase without subphases.
 - Do not create a plan without dependency/tooling preflight.
-- Do not create a plan without deterministic real-user test, Armageddon mode, and generality guardrail sections.
+- Do not create a plan without SOTA/standards research, deterministic real-user test, fulfillment/readback proof, Armageddon mode, and generality guardrail sections.
 - Do not create a subphase without commit, tests, success criteria, planned touch files, and checklist.
 - Make every subphase independently valid unless explicitly impossible.
 - Name the exact evidence the lower-level agent must produce.
 - For UI/browser-facing work, missing Playwright or browser binaries must be handled as an install/repair subphase unless a real blocker prevents setup.
+- For artifact, data-write, integration, deployment, or agent-tool workflows, creation/copy/routing is not success; require mutation proof and final readback of the user-visible result.
 - If no general mechanism exists and the behavior is likely to recur, create the general mechanism first and implement the specific use case through it.

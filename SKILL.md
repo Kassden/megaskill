@@ -19,7 +19,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 2. **Create or validate the plan**
    - Use `scripts/mega_plan_init.py` to generate a plan skeleton when no canonical plan exists.
    - Use `scripts/mega_plan_check.py <plan.md>` before executing from a plan.
-   - The plan must have dependency/tooling preflight, deterministic real-user test, Armageddon mode, generality guardrail, phases, subphases, commit lines, tests, success criteria, and checklist items.
+   - The plan must have SOTA/standards research, dependency/tooling preflight, deterministic real-user test, fulfillment/readback proof, Armageddon mode, generality guardrail, phases, subphases, commit lines, tests, success criteria, and checklist items.
    - For lower-level agents, make every subphase decision-complete: exact objective, files or systems to inspect, allowed edit surface, verification command, and handoff criteria.
 
 3. **Declare regression guardrails before edits**
@@ -31,6 +31,8 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Proof plan.
    - Atomic change units.
    - Commit plan.
+   - SOTA/standards decision: current best-practice research, official docs/specs, mature libraries/frameworks, and rejected approaches.
+   - Fulfillment proof: what final readback or side-effect check proves the requested outcome was actually completed.
    - Generality decision: reuse the existing general mechanism, create one if recurring behavior lacks a general owner, or justify a true one-off.
 
 4. **Execute one subphase at a time**
@@ -46,6 +48,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - For UI/browser-facing work, install or repair Playwright and browser binaries when needed, then run browser smoke, screenshot, visual, or canvas checks that match the change.
    - Only skip relevant verification for a real blocker: denied approval, missing credentials, incompatible platform, external outage, destructive action boundary, or an unresolved product decision.
    - For interfaces, tools, apps, CLIs, workflows, or user-facing surfaces, run a deterministic real-user experience test before broader verification.
+   - For artifact, data-write, integration, or agent-tool workflows, prove fulfillment with a readback of the final user-visible result. Creating, copying, routing to, or opening the right container is not enough.
    - Run Armageddon mode for interface/tool/app/API or high-risk work: adversarially attack edge cases, failures, bad inputs, and optimization opportunities.
    - Run the subphase tests/checks.
    - Record important checks with `scripts/mega_evidence.py`.
