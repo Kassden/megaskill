@@ -40,6 +40,7 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 - Goal locking with acceptance criteria and out-of-scope boundaries.
 - Plan validation for SOTA/standards research, dependency/tooling preflight, deterministic real-user tests, fulfillment/readback proof, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
 - Regression guardrail prompts before file edits.
+- Branch isolation for Large/Systemic regression risk before implementation.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
 - Evidence recording for verification commands.
@@ -270,6 +271,8 @@ Use this shape when assigning work to a lower-level coding agent. The important 
   - Customer search UI, saved-search workflows, API clients, and support tooling.
 - Damage radius:
   - Moderate: API behavior and shared service path.
+- Branch strategy:
+  - Current branch is acceptable because the example is Moderate damage radius; Large/Systemic work must use a dedicated work branch.
 - Proof plan:
   - Run targeted cache tests, existing customer search tests, typecheck, and one manual API smoke if the app has a local dev server.
 

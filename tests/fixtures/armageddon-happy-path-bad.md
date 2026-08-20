@@ -64,6 +64,7 @@
 - Protected behaviors: CLI output.
 - Likely consumers: operators.
 - Damage radius: Small.
+- Branch strategy: Current branch is acceptable because the damage radius is small.
 - Proof plan: happy path only.
 
 ## Phase 1: CLI

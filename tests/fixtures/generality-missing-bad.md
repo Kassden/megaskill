@@ -56,6 +56,7 @@
 - Protected behaviors: existing scripts.
 - Likely consumers: operators.
 - Damage radius: Moderate.
+- Branch strategy: Current branch is acceptable for this moderate scoped change after status check.
 - Proof plan: fixture tests.
 
 ## Phase 1: Script

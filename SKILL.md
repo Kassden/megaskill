@@ -28,6 +28,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Protected behaviors.
    - Likely consumers.
    - Damage radius: small, moderate, large, or systemic.
+   - Branch strategy: current branch with reason for small/moderate work; dedicated work branch required for large/systemic regression risk unless explicitly blocked or instructed otherwise.
    - Proof plan.
    - Atomic change units.
    - Commit plan.
@@ -36,6 +37,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Generality decision: reuse the existing general mechanism, create one if recurring behavior lacks a general owner, or justify a true one-off.
 
 4. **Execute one subphase at a time**
+   - For large/systemic damage radius, create or switch to the declared dedicated work branch before editing. If branch creation is blocked, stop and name the blocker before mutating files.
    - Re-read the plan before each subphase.
    - Edit only the current subphase.
    - If changed files exceed the planned touch surface, stop and call out scope expansion.

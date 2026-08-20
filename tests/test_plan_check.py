@@ -87,6 +87,7 @@ def valid_plan() -> str:
 - Protected behaviors: routing.
 - Likely consumers: web users.
 - Damage radius: Moderate.
+- Branch strategy: Current branch is acceptable for this moderate route change after checking status.
 - Proof plan: Playwright browser smoke and screenshot checks.
 
 ## Phase 1: UI
@@ -192,6 +193,32 @@ class PlanCheckTests(unittest.TestCase):
         text = valid_plan() + "\n- Verification is happy path only.\n"
         errors = module.validate(text)
         self.assertTrue(any("weak verification language" in error for error in errors))
+
+    def test_missing_branch_strategy_fails(self):
+        module = load_module()
+        text = valid_plan().replace("- Branch strategy: Current branch is acceptable for this moderate route change after checking status.\n", "")
+        errors = module.validate(text)
+        self.assertIn("## Regression Guardrails must include Branch strategy", errors)
+
+    def test_large_regression_risk_requires_dedicated_branch(self):
+        module = load_module()
+        text = valid_plan().replace("- Damage radius: Moderate.", "- Damage radius: Large.")
+        text = text.replace(
+            "- Branch strategy: Current branch is acceptable for this moderate route change after checking status.",
+            "- Branch strategy: current branch because it is convenient.",
+        )
+        errors = module.validate(text)
+        self.assertTrue(any("large/systemic regression risk" in error for error in errors))
+
+    def test_large_regression_risk_accepts_named_branch(self):
+        module = load_module()
+        text = valid_plan().replace("- Damage radius: Moderate.", "- Damage radius: Large.")
+        text = text.replace(
+            "- Branch strategy: Current branch is acceptable for this moderate route change after checking status.",
+            "- Branch strategy: Create dedicated branch `mega/high-risk-ui-change` before editing.",
+        )
+        errors = module.validate(text)
+        self.assertEqual([], errors)
 
     def test_plan_init_output_passes_plan_check(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -66,6 +66,7 @@
 - Protected behaviors: static hosting.
 - Likely consumers: landing page visitors.
 - Damage radius: Moderate.
+- Branch strategy: Current branch is acceptable for this moderate UI work after status check.
 - Proof plan: Playwright browser smoke and screenshot checks.
 
 ## Phase 1: UI

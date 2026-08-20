@@ -64,6 +64,7 @@
 - Protected behaviors: Drive file creation and quote extraction.
 - Likely consumers: production chat users.
 - Damage radius: Systemic.
+- Branch strategy: Create dedicated branch `mega/sheet-write-fulfillment` before editing.
 - Proof plan: production tool stream plus exported sheet content comparison.
 
 ## Phase 1: Sheet Workflow

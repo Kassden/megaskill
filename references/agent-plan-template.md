@@ -68,6 +68,7 @@ Use this shape for lower-level agent plans.
 - Protected behaviors:
 - Likely consumers:
 - Damage radius:
+- Branch strategy:
 - Proof plan:
 
 ## Phase 1: <name>
@@ -94,3 +95,4 @@ Rules:
 - For UI/browser-facing work, missing Playwright or browser binaries must be handled as an install/repair subphase unless a real blocker prevents setup.
 - For artifact, data-write, integration, deployment, or agent-tool workflows, creation/copy/routing is not success; require mutation proof and final readback of the user-visible result.
 - If no general mechanism exists and the behavior is likely to recur, create the general mechanism first and implement the specific use case through it.
+- If damage radius is Large or Systemic, create or use a dedicated work branch before implementation unless a real blocker or explicit user instruction prevents branching.

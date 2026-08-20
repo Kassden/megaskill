@@ -81,6 +81,7 @@ def render(title: str, goal: str, phases: list[str]) -> str:
         "- Protected behaviors: <behavior that must remain unchanged>",
         "- Likely consumers: <callers, users, jobs, deploy/runtime surfaces>",
         "- Damage radius: <small | moderate | large | systemic>",
+        "- Branch strategy: <current branch acceptable for small/moderate with reason; dedicated branch required for large/systemic regression risk>",
         "- Proof plan: <checks that prove the goal and protect adjacent behavior>",
         "",
     ]

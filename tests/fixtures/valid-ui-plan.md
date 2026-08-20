@@ -64,6 +64,7 @@
 - Protected behaviors: routing.
 - Likely consumers: web users.
 - Damage radius: Moderate.
+- Branch strategy: Current branch is acceptable for this moderate route change after status check.
 - Proof plan: Playwright browser smoke and screenshot checks.
 
 ## Phase 1: UI

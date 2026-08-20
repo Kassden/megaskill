@@ -12,6 +12,7 @@ Megaskill Guardrail
 - Protected behaviors:
 - Likely consumers:
 - Damage radius:
+- Branch strategy:
 - Proof plan:
 - Atomic units:
 - Commit plan:
@@ -34,6 +35,18 @@ Scale proof to radius:
 - Moderate: direct check plus one adjacent flow.
 - Large: contract-aware checks plus build/integration where available.
 - Systemic: strongest available end-to-end or live verification plus rollback awareness.
+
+## Branch Strategy For Regression Risk
+
+When regression risk is high, isolate the work before editing.
+
+Rules:
+
+- Small or Moderate damage radius: the current branch can be acceptable when the user requested it, the repo convention supports direct commits, or the change is low blast radius. State the reason in `Branch strategy`.
+- Large or Systemic damage radius: create or use a dedicated work branch before implementation. Name the branch in `Branch strategy`.
+- Do not land Large/Systemic work directly on `main`, `master`, trunk, or a shared release branch unless the user explicitly instructs it or the repository policy requires it.
+- If branching is blocked by a dirty worktree, detached HEAD, missing Git repo, denied permission, or conflicting user instruction, stop before edits and name the blocker.
+- Before merging or pushing back to a protected/shared branch, rerun the declared proof plan and record the merge/push/readback evidence.
 
 ## SOTA, Standards, And Best-Practices Research
 

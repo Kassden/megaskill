@@ -64,6 +64,7 @@
 - Protected behaviors: dashboard render.
 - Likely consumers: dashboard users.
 - Damage radius: Large.
+- Branch strategy: Create dedicated branch `mega/dashboard-playwright-verification` before editing.
 - Proof plan: browser smoke when possible.
 
 ## Phase 1: Benchmark

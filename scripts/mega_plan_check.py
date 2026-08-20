@@ -79,6 +79,15 @@ CONTENT_ASSERTION_RE = re.compile(
     r"\b(content|rows?|fields?|counts?|totals?|values?|formulas?|status|metadata|behavior|clauses?|tables?|assertions?)\b",
     re.IGNORECASE,
 )
+HIGH_RISK_RADIUS_RE = re.compile(r"\b(large|systemic)\b", re.IGNORECASE)
+BRANCH_STRATEGY_RE = re.compile(
+    r"\b(branch|feature branch|dedicated branch|risk branch|isolation branch|separate branch|worktree)\b",
+    re.IGNORECASE,
+)
+NO_BRANCH_RE = re.compile(
+    r"\b(no branch|current branch|main directly|trunk directly|same branch)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -154,6 +163,7 @@ def validate(text: str) -> list[str]:
     fulfillment_section = ""
     armageddon_section = ""
     generality_section = ""
+    regression_section = ""
     sections = split_sections(text)
     for section in sections:
         if section.heading == "## Dependency and Tooling Preflight":
@@ -168,6 +178,8 @@ def validate(text: str) -> list[str]:
             armageddon_section = section.body
         elif section.heading == "## Generality Guardrail":
             generality_section = section.body
+        elif section.heading == "## Regression Guardrails":
+            regression_section = section.body
     if sota_section and not SOTA_RE.search(sota_section):
         errors.append("## SOTA, Standards, And Best Practices must document prior art, official docs/standards, mature libraries, best practices, rejected approaches, or implementation decision")
     if tooling_section:
@@ -184,6 +196,14 @@ def validate(text: str) -> list[str]:
         errors.append("## Armageddon Mode must name edge cases, failure modes, attack scope, optimization opportunities, or must-fix threshold")
     if generality_section and not GENERALITY_RE.search(generality_section):
         errors.append("## Generality Guardrail must document existing mechanism, recurrence, general mechanism decision, or one-off justification")
+    if regression_section:
+        branch_strategy = field_value(regression_section, "Branch strategy")
+        damage_radius = field_value(regression_section, "Damage radius")
+        if not branch_strategy:
+            errors.append("## Regression Guardrails must include Branch strategy")
+        elif "<" not in damage_radius and HIGH_RISK_RADIUS_RE.search(damage_radius):
+            if NO_BRANCH_RE.search(branch_strategy) or not BRANCH_STRATEGY_RE.search(branch_strategy):
+                errors.append("large/systemic regression risk must use a separate branch or explicitly named isolation branch strategy")
     if LOOPHOLE_RE.search(text):
         errors.append("plan contains verification loophole language such as 'only if already available' or skip-on-missing-tooling")
     if HAPPY_PATH_ONLY_RE.search(text):
