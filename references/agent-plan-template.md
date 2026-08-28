@@ -63,6 +63,14 @@ Use this shape for lower-level agent plans.
 - Specific use case implementation through the mechanism:
 - One-off justification, if any:
 
+## Ordered State and Dashboard
+- State ledger path:
+- Dashboard output path:
+- Open behavior:
+- State events to record:
+- Evidence links:
+- Dashboard readback assertions:
+
 ## Regression Guardrails
 - Planned edit surface:
 - Protected behaviors:
@@ -89,6 +97,7 @@ Rules:
 - Do not create a phase without subphases.
 - Do not create a plan without dependency/tooling preflight.
 - Do not create a plan without SOTA/standards research, deterministic real-user test, fulfillment/readback proof, Armageddon mode, and generality guardrail sections.
+- For multi-phase or multi-agent plans, include ordered state and dashboard fields or explicitly justify why the plan is too small to need them.
 - Do not create a subphase without commit, tests, success criteria, planned touch files, and checklist.
 - Make every subphase independently valid unless explicitly impossible.
 - Name the exact evidence the lower-level agent must produce.

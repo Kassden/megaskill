@@ -20,6 +20,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Use `scripts/mega_plan_init.py` to generate a plan skeleton when no canonical plan exists.
    - Use `scripts/mega_plan_check.py <plan.md>` before executing from a plan.
    - The plan must have SOTA/standards research, dependency/tooling preflight, deterministic real-user test, fulfillment/readback proof, Armageddon mode, generality guardrail, phases, subphases, commit lines, tests, success criteria, and checklist items.
+   - For substantial plans, generate or update the plan dashboard with `scripts/mega_plan_dashboard.py` or `scripts/mega_plan_init.py --dashboard`. The dashboard is a read view over the canonical plan, `.mega/state.jsonl`, and `.mega/evidence.jsonl`; do not hand-maintain a separate source of truth.
    - For lower-level agents, make every subphase decision-complete: exact objective, files or systems to inspect, allowed edit surface, verification command, and handoff criteria.
 
 3. **Declare regression guardrails before edits**
@@ -54,6 +55,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Run Armageddon mode for interface/tool/app/API or high-risk work: adversarially attack edge cases, failures, bad inputs, and optimization opportunities.
    - Run the subphase tests/checks.
    - Record important checks with `scripts/mega_evidence.py`.
+   - Record ordered execution state with `scripts/mega_state.py` when the work spans multiple phases, agents, commits, or verification surfaces.
    - Stage only the coherent unit.
    - Run `scripts/mega_commit_check.py` before committing.
    - Commit each independently valid subphase when commits are in scope.
@@ -72,10 +74,14 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 ## Script Quick Reference
 
 - `scripts/mega_plan_init.py "Title" --goal "Goal" --phases "Discovery,Implementation,Verification" --output PLAN.md`
+- `scripts/mega_plan_init.py "Title" --goal "Goal" --output PLAN.md --dashboard --no-open`
 - `scripts/mega_plan_check.py PLAN.md`
+- `scripts/mega_state.py record --plan PLAN.md --phase "1" --subphase "1.1" --kind test --status done --summary "targeted tests passed"`
+- `scripts/mega_state.py summary`
+- `scripts/mega_plan_dashboard.py PLAN.md --output .mega/dashboards/plan.html --no-open`
 - `scripts/mega_scope_check.py PLAN.md --planned src/foo.ts --planned tests/foo.test.ts`
 - `scripts/mega_commit_check.py`
-- `scripts/mega_evidence.py record --phase "1.1" --command "npm test" --exit-code 0 --note "targeted tests"`
+- `scripts/mega_evidence.py record --phase "1.1" --command "npm test" --exit-code 0 --note "targeted tests" --state-event-id evt-...`
 - `scripts/mega_evidence.py run --phase "1.1" -- npm test`
 - `scripts/mega_evidence.py summary`
 

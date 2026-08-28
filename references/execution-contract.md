@@ -20,6 +20,22 @@ Megaskill Guardrail
 - Fulfillment proof:
 ```
 
+## Ordered State And Plan Dashboard
+
+For multi-phase work, Megaskill uses two ledgers plus one generated read view:
+
+- `.mega/state.jsonl`: ordered execution state. This is the canonical timeline for plan, guardrail, subphase, edit, test, evidence, readback, Armageddon, commit, blocker, handoff, and archive events.
+- `.mega/evidence.jsonl`: verification command evidence. Evidence records can optionally include `state_event_id` to link a command result to a state event.
+- generated dashboard HTML: a browser-readable view over the Markdown plan, state ledger, and evidence ledger. The dashboard must not become a hand-edited parallel plan.
+
+Rules:
+
+- Use `scripts/mega_state.py record` to capture ordered progress when the task spans multiple phases, agents, commits, or verification surfaces.
+- Use `scripts/mega_state.py validate` before final handoff for stateful multi-phase plans.
+- Use `scripts/mega_plan_dashboard.py PLAN.md --no-open` for deterministic generation and `--open` or interactive defaults when the user expects the dashboard to appear in the browser.
+- In CI or noninteractive execution, suppress browser launch with `--no-open`.
+- Dashboard success requires readback of the generated HTML and, for UI-facing dashboard changes, browser smoke or an explicit real blocker after tooling install/repair was attempted.
+
 ## Damage Radius
 
 Use the highest applicable tier:
@@ -216,11 +232,13 @@ For each subphase:
 5. Run fulfillment/readback proof when the work produces or mutates an artifact, record, deployment, external system, or agent-tool result.
 6. Run the declared tests and Armageddon checks.
 7. Record evidence.
-8. Check scope drift.
-9. Stage only that unit.
-10. Check atomicity.
-11. Commit when commits are in scope.
-12. Continue to the next executable subphase.
+8. Record ordered state when the plan spans multiple phases or agents.
+9. Regenerate/read back the plan dashboard when the dashboard is in scope.
+10. Check scope drift.
+11. Stage only that unit.
+12. Check atomicity.
+13. Commit when commits are in scope.
+14. Continue to the next executable subphase.
 
 ## Real Blockers
 
