@@ -41,9 +41,11 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 - Plan validation for SOTA/standards research, dependency/tooling preflight, deterministic real-user tests, fulfillment/readback proof, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
 - Regression guardrail prompts before file edits.
 - Branch isolation for Large/Systemic regression risk before implementation.
+- Ordered execution state recording for multi-phase or multi-agent work.
+- Generated HTML plan dashboards that show source-of-truth files, phases, damage radius, branch strategy, proof surfaces, evidence, blockers, and archive status.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
-- Evidence recording for verification commands.
+- Evidence recording for verification commands, optionally linked to ordered state events.
 - Final handoff structure with a clear `done`, `blocked`, or `not done` verdict.
 
 ## Autonomy Rule
@@ -187,6 +189,39 @@ Summarize recorded evidence:
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_evidence.py summary
 ```
+
+Record ordered execution state:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_state.py record \
+  --plan PLAN.md \
+  --phase "1" \
+  --subphase "1.1" \
+  --kind test \
+  --status done \
+  --summary "Targeted tests passed"
+```
+
+Generate a dashboard without opening a browser:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_dashboard.py PLAN.md \
+  --output .mega/dashboards/PLAN.html \
+  --no-open
+```
+
+Create a plan and dashboard together:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_init.py \
+  "Execution Plan" \
+  --goal "Ship the requested change with tests and evidence" \
+  --output PLAN.md \
+  --dashboard \
+  --no-open
+```
+
+Use `--open` for an explicit browser launch. In CI and deterministic test runs, use `--no-open`.
 
 ## Example Goal And Research Plan
 
@@ -344,9 +379,11 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 | --- | --- |
 | `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with SOTA research, tooling preflight, real-user testing, fulfillment/readback proof, Armageddon, and generality guardrails. |
 | `scripts/mega_plan_check.py` | Validates plan structure, required SOTA/tooling/fulfillment sections, UI/browser proof, and skip-on-missing-tooling loopholes. |
+| `scripts/mega_state.py` | Records, summarizes, and validates ordered execution state in `.mega/state.jsonl`. |
+| `scripts/mega_plan_dashboard.py` | Generates a browser-readable HTML dashboard from the canonical plan, ordered state, and evidence ledgers. |
 | `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit; reports artifact-evidence fallback outside Git repos. |
-| `scripts/mega_evidence.py` | Records and summarizes verification evidence. |
+| `scripts/mega_evidence.py` | Records and summarizes verification evidence, with optional `state_event_id` correlation. |
 
 ## Validation
 
@@ -365,6 +402,9 @@ The tests cover:
 - artifact creation without write/readback proof failing validation
 - UI plans without browser proof failing validation
 - Playwright availability loopholes failing validation
+- ordered state schema/order validation
+- dashboard generation, readback, and no-open behavior
+- evidence records linked to state events without breaking old records
 - non-Git scope and commit helpers returning clear fallback evidence guidance
 
 ## Skill Files
