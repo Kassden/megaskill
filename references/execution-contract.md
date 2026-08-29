@@ -32,6 +32,7 @@ Rules:
 
 - Use `scripts/mega_state.py record` to capture ordered progress when the task spans multiple phases, agents, commits, or verification surfaces.
 - Use `scripts/mega_state.py validate` before final handoff for stateful multi-phase plans.
+- Use `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` before claiming completion on whole-plan requests.
 - Use `scripts/mega_plan_dashboard.py PLAN.md --no-open` for deterministic generation and `--open` or interactive defaults when the user expects the dashboard to appear in the browser.
 - In CI or noninteractive execution, suppress browser launch with `--no-open`.
 - Dashboard success requires readback of the generated HTML and, for UI-facing dashboard changes, browser smoke or an explicit real blocker after tooling install/repair was attempted.
@@ -239,6 +240,19 @@ For each subphase:
 12. Check atomicity.
 13. Commit when commits are in scope.
 14. Continue to the next executable subphase.
+
+## Whole-Plan Final Gate
+
+When the user asks to execute the whole plan, finish all phases, not drop the plan, or equivalent full-goal language, subphase completion is a checkpoint only. It is not a valid final stopping condition.
+
+Before a final answer on multi-phase whole-plan work:
+
+1. Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` if claiming `done`.
+2. Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict blocked` if claiming `blocked`.
+3. If the gate finds incomplete subphases and no blocker, continue the next executable subphase instead of sending a final answer.
+4. Do not use `not done` as a final handoff for a whole-plan request unless the user explicitly asked for a progress report rather than continued execution.
+
+Regression this prevents: completing one or two atomic slices, saying the full plan is not finished, and ending the turn without a real blocker.
 
 ## Real Blockers
 

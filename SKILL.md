@@ -62,12 +62,15 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 
 6. **Continue, do not hand off**
    - Continue into the next obvious machine-executable step.
+   - If the user asked for the whole plan, all phases, "do not drop it", or equivalent full-goal language, atomic subphase completion is only a checkpoint. It is not a valid final answer.
    - Push/deploy/smoke test when available and implied.
    - Stop only for a real blocker: missing credentials, approval boundary, destructive action, unavailable external service, incompatible platform, conflicting instructions, or a product decision that cannot be inferred.
    - Do not call work done with "tool not installed" unless installation was attempted and failed for a real blocker.
 
 7. **Finish with evidence**
    - Do not call work done without evidence against the goal.
+   - Before any final answer for multi-phase work, run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` or `--verdict blocked` when a real blocker is recorded.
+   - If the final gate reports incomplete subphases and no blocker, do not final. Continue the next executable subphase.
    - Use `scripts/mega_evidence.py summary` to help build the final proof block.
    - Final verdict must be `done`, `blocked`, or `not done`.
 
@@ -78,6 +81,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 - `scripts/mega_plan_check.py PLAN.md`
 - `scripts/mega_state.py record --plan PLAN.md --phase "1" --subphase "1.1" --kind test --status done --summary "targeted tests passed"`
 - `scripts/mega_state.py summary`
+- `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done`
 - `scripts/mega_plan_dashboard.py PLAN.md --output .mega/dashboards/plan.html --no-open`
 - `scripts/mega_scope_check.py PLAN.md --planned src/foo.ts --planned tests/foo.test.ts`
 - `scripts/mega_commit_check.py`

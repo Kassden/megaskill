@@ -46,6 +46,7 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
 - Evidence recording for verification commands, optionally linked to ordered state events.
+- A whole-plan final gate that rejects partial-progress handoffs when the user asked the agent to finish the entire plan.
 - Final handoff structure with a clear `done`, `blocked`, or `not done` verdict.
 
 ## Autonomy Rule
@@ -223,6 +224,17 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_init.py \
 
 Use `--open` for an explicit browser launch. In CI and deterministic test runs, use `--no-open`.
 
+Check that a whole-plan final handoff is allowed:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_state.py final-gate \
+  --plan PLAN.md \
+  --whole-plan \
+  --verdict done
+```
+
+For a blocked handoff, record a `kind=blocker` state event first, then run the same command with `--verdict blocked`. If the gate reports incomplete subphases and no blocker, the agent must continue instead of sending a final answer.
+
 ## Example Goal And Research Plan
 
 Use this shape when assigning work to a lower-level coding agent. The important part is that each subphase is decision-complete: it names what to inspect, what may be edited, what proves success, and what must be checked off before moving on.
@@ -379,7 +391,7 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 | --- | --- |
 | `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with SOTA research, tooling preflight, real-user testing, fulfillment/readback proof, Armageddon, and generality guardrails. |
 | `scripts/mega_plan_check.py` | Validates plan structure, required SOTA/tooling/fulfillment sections, UI/browser proof, and skip-on-missing-tooling loopholes. |
-| `scripts/mega_state.py` | Records, summarizes, and validates ordered execution state in `.mega/state.jsonl`. |
+| `scripts/mega_state.py` | Records, summarizes, validates ordered execution state, and gates whole-plan final handoffs against `.mega/state.jsonl`. |
 | `scripts/mega_plan_dashboard.py` | Generates a browser-readable HTML dashboard from the canonical plan, ordered state, and evidence ledgers. |
 | `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit; reports artifact-evidence fallback outside Git repos. |
@@ -403,6 +415,7 @@ The tests cover:
 - UI plans without browser proof failing validation
 - Playwright availability loopholes failing validation
 - ordered state schema/order validation
+- whole-plan final gate rejection of partial-progress handoffs
 - dashboard generation, readback, and no-open behavior
 - evidence records linked to state events without breaking old records
 - non-Git scope and commit helpers returning clear fallback evidence guidance
