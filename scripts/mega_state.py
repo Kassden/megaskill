@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -43,6 +44,7 @@ KINDS = {
 }
 STATUSES = {"planned", "active", "done", "blocked", "failed", "skipped", "archived"}
 DAMAGE_RADII = {"", "small", "moderate", "large", "systemic"}
+SUBPHASE_RE = re.compile(r"^###\s+Subphase\s+(\d+(?:\.\d+)+):\s*(.+)$", re.MULTILINE)
 
 
 def now() -> str:
@@ -129,6 +131,90 @@ def validation_errors(records: list[dict[str, object]], parse_errors: list[str])
 
 def clean_record(record: dict[str, object]) -> dict[str, object]:
     return {key: value for key, value in record.items() if key != "_line"}
+
+
+def normalize(value: object) -> str:
+    return re.sub(r"[^a-z0-9.]+", " ", str(value).lower()).strip()
+
+
+def plan_subphases(path: Path) -> list[tuple[str, str]]:
+    if not path.exists():
+        raise FileNotFoundError(f"plan file not found: {path}")
+    text = path.read_text(encoding="utf-8")
+    return [(match.group(1), match.group(2).strip()) for match in SUBPHASE_RE.finditer(text)]
+
+
+def subphase_completed(records: list[dict[str, object]], number: str, title: str) -> bool:
+    wanted_number = normalize(number)
+    wanted_title = normalize(title)
+    for record in records:
+        status = str(record.get("status", ""))
+        if status not in {"done", "archived"}:
+            continue
+        subphase = normalize(record.get("subphase", ""))
+        phase = normalize(record.get("phase", ""))
+        summary = normalize(record.get("summary", ""))
+        haystack = " ".join([subphase, phase, summary])
+        if wanted_number in haystack or (wanted_title and wanted_title in haystack):
+            return True
+    return False
+
+
+def blocked_records(records: list[dict[str, object]]) -> list[dict[str, object]]:
+    return [
+        record
+        for record in records
+        if str(record.get("kind", "")) == "blocker"
+        and str(record.get("status", "")) in {"blocked", "failed"}
+    ]
+
+
+def cmd_final_gate(args: argparse.Namespace) -> int:
+    records, parse_errors = read_records(state_path(args.file))
+    errors = validation_errors(records, parse_errors)
+    if errors:
+        print("Mega final gate failed: state ledger is invalid.")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    try:
+        subphases = plan_subphases(Path(args.plan))
+    except FileNotFoundError as exc:
+        print(f"Mega final gate failed: {exc}")
+        return 1
+    blockers = blocked_records(records)
+    incomplete = [
+        f"Subphase {number}: {title}"
+        for number, title in subphases
+        if not subphase_completed(records, number, title)
+    ]
+
+    print("Mega final gate")
+    print(f"- plan: {args.plan}")
+    print(f"- state: {state_path(args.file)}")
+    print(f"- verdict: {args.verdict}")
+    print(f"- subphases: {len(subphases)}")
+    print(f"- incomplete: {len(incomplete)}")
+    print(f"- blockers: {len(blockers)}")
+
+    if args.whole_plan and args.verdict == "not-done":
+        print("Mega final gate failed: whole-plan execution cannot final as not-done without continuing or naming a real blocker.")
+        return 1
+    if args.verdict == "done" and incomplete:
+        print("Mega final gate failed: done verdict has incomplete plan subphases.")
+        for item in incomplete:
+            print(f"- {item}")
+        return 1
+    if args.verdict == "blocked" and not blockers:
+        print("Mega final gate failed: blocked verdict requires a blocker event in the state ledger.")
+        return 1
+    if args.whole_plan and incomplete and not blockers:
+        print("Mega final gate failed: whole-plan request still has executable incomplete subphases and no blocker.")
+        for item in incomplete:
+            print(f"- {item}")
+        return 1
+    print("Mega final gate passed.")
+    return 0
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -231,6 +317,17 @@ def main() -> int:
     summary.add_argument("--file")
     summary.add_argument("--last", type=int, default=20)
     summary.set_defaults(func=cmd_summary)
+
+    final_gate = sub.add_parser("final-gate", help="check whether a final handoff is allowed")
+    final_gate.add_argument("--plan", required=True)
+    final_gate.add_argument("--file")
+    final_gate.add_argument("--verdict", choices=["done", "blocked", "not-done"], default="done")
+    final_gate.add_argument(
+        "--whole-plan",
+        action="store_true",
+        help="enforce that a whole-plan request cannot stop on partial progress",
+    )
+    final_gate.set_defaults(func=cmd_final_gate)
 
     args = parser.parse_args()
     return int(args.func(args))

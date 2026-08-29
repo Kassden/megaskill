@@ -101,6 +101,95 @@ class MegaStateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("related_event_id not found", result.stdout)
 
+    def test_final_gate_rejects_whole_plan_partial_without_blocker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = Path(tmp)
+            plan = cwd / "PLAN.md"
+            state_file = cwd / "state.jsonl"
+            plan.write_text(
+                "# Plan\n\n"
+                "## Phase 1: One\n\n"
+                "### Subphase 1.1: First\n"
+                "- Commit: first\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n\n"
+                "### Subphase 1.2: Second\n"
+                "- Commit: second\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n",
+                encoding="utf-8",
+            )
+            state_file.write_text(
+                '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-1","kind":"subphase","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"done","subphase":"1.1","summary":"first done","timestamp":"2026-08-28T00:00:00+00:00"}\n',
+                encoding="utf-8",
+            )
+            result = run_state(
+                cwd,
+                "final-gate",
+                "--plan",
+                str(plan),
+                "--file",
+                str(state_file),
+                "--verdict",
+                "not-done",
+                "--whole-plan",
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("whole-plan execution cannot final as not-done", result.stdout)
+
+    def test_final_gate_rejects_done_with_incomplete_subphase(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = Path(tmp)
+            plan = cwd / "PLAN.md"
+            state_file = cwd / "state.jsonl"
+            plan.write_text(
+                "# Plan\n\n## Phase 1: One\n\n### Subphase 1.1: First\n- Commit: first\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n\n### Subphase 1.2: Second\n- Commit: second\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n",
+                encoding="utf-8",
+            )
+            state_file.write_text(
+                '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-1","kind":"subphase","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"done","subphase":"1.1","summary":"first done","timestamp":"2026-08-28T00:00:00+00:00"}\n',
+                encoding="utf-8",
+            )
+            result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "done")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("done verdict has incomplete plan subphases", result.stdout)
+
+    def test_final_gate_accepts_done_when_all_subphases_complete(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = Path(tmp)
+            plan = cwd / "PLAN.md"
+            state_file = cwd / "state.jsonl"
+            plan.write_text(
+                "# Plan\n\n## Phase 1: One\n\n### Subphase 1.1: First\n- Commit: first\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n\n### Subphase 1.2: Second\n- Commit: second\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n",
+                encoding="utf-8",
+            )
+            state_file.write_text(
+                "\n".join(
+                    [
+                        '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-1","kind":"subphase","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"done","subphase":"1.1","summary":"first done","timestamp":"2026-08-28T00:00:00+00:00"}',
+                        '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-2","kind":"subphase","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"done","subphase":"1.2","summary":"second done","timestamp":"2026-08-28T00:00:01+00:00"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "done", "--whole-plan")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("Mega final gate passed", result.stdout)
+
+    def test_final_gate_accepts_blocked_with_blocker_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = Path(tmp)
+            plan = cwd / "PLAN.md"
+            state_file = cwd / "state.jsonl"
+            plan.write_text(
+                "# Plan\n\n## Phase 1: One\n\n### Subphase 1.1: First\n- Commit: first\n- Tests: test\n- Success Criteria: ok\n- Checklist:\n  - [ ] work\n",
+                encoding="utf-8",
+            )
+            state_file.write_text(
+                '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-1","kind":"blocker","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"blocked","subphase":"1.1","summary":"missing credentials","timestamp":"2026-08-28T00:00:00+00:00"}\n',
+                encoding="utf-8",
+            )
+            result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "blocked", "--whole-plan")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("Mega final gate passed", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
