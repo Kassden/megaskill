@@ -83,21 +83,24 @@ flowchart LR
     D --> E(["Execute one unit"])
     E --> F(["Verify"])
     F --> G(["Record evidence"])
-    G --> H(["Scope check"])
-    H --> I(["Atomic commit check"])
-    I --> J{"Complete?"}
-    J -- "next unit" --> E
-    J -- "yes" --> K(["Final handoff: done"])
-    F -- "fails" --> L{"Real blocker?"}
-    L -- "fixable" --> E
-    L -- "blocked" --> M(["Final handoff: blocked"])
+    G --> H(["Record ordered state"])
+    H --> I(["Read back dashboard"])
+    I --> J(["Scope check"])
+    J --> K(["Atomic commit check"])
+    K --> L{"Whole-plan final gate?"}
+    L -- "continue" --> E
+    L -- "done" --> M(["Final handoff: done"])
+    L -- "blocked" --> N(["Final handoff: blocked"])
+    F -- "fails" --> O{"Real blocker?"}
+    O -- "fixable" --> E
+    O -- "blocked" --> N
 
     classDef action fill:#F8FAFC,stroke:#334155,stroke-width:1.5px,color:#0F172A;
     classDef decision fill:#FEF3C7,stroke:#B45309,stroke-width:1.5px,color:#78350F;
     classDef terminal fill:#ECFDF5,stroke:#047857,stroke-width:1.5px,color:#064E3B;
-    class A,B,C,D,E,F,G,H,I action;
-    class J,L decision;
-    class K,M terminal;
+    class A,B,C,D,E,F,G,H,I,J,K action;
+    class L,O decision;
+    class M,N terminal;
 ```
 
 ## Install
