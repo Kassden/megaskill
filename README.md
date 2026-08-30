@@ -214,6 +214,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_dashboard.py PLAN.md \
   --no-open
 ```
 
+Example generated dashboard: [ordered-state-plan.html](</Users/milkingthesun/.codex/skills/megaskill/.mega/dashboards/ordered-state-plan.html>)
+
 Create a plan and dashboard together:
 
 ```bash
