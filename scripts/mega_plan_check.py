@@ -55,6 +55,39 @@ FULFILLMENT_RE = re.compile(
     r"\b(final user-visible result|user-visible result|artifact|record|deployment|external state|required write|mutation operation|readback surface|expected content|rows|fields|counts|behavior|tool call evidence|not-done conditions|not done conditions)\b",
     re.IGNORECASE,
 )
+REMEDIATION_CONTEXT_RE = re.compile(
+    r"\b("
+    r"root cause|root-cause|rca|incident|outage|telemetry gap|data loss|missing data|"
+    r"remediat(?:e|ion)|recover(?:y)?|prevent this again|what happened|"
+    r"live infrastructure|production-adjacent|production adjacent|live device|"
+    r"device failure|network failure|service failure|deployment failure|auth failure|"
+    r"tailscale|modem|dtu|pi4b|raspberry pi"
+    r")\b",
+    re.IGNORECASE,
+)
+BENIGN_TEMPLATE_CONTEXT_RE = re.compile(
+    r"(?im)^.*(?:Real blockers that would prevent setup|Real blockers):.*$"
+)
+ROOT_EVIDENCE_RE = re.compile(
+    r"\b(timeline|affected surface|current health|logs?|journals?|metrics?|readbacks?|recent changes|config|state|external dependencies|user-observed|user observed|forensic)\b",
+    re.IGNORECASE,
+)
+ROOT_HYPOTHESIS_RE = re.compile(
+    r"\b(hypothes(?:is|es)|candidate causes?|proven|likely|possible|unlikely|disproven|counter-evidence|counter evidence)\b",
+    re.IGNORECASE,
+)
+ROOT_MISSING_EVIDENCE_RE = re.compile(
+    r"\b(missing evidence|unavailable|cannot obtain|could supply|destructive|retention|blocked|uncertainty|constraints?)\b",
+    re.IGNORECASE,
+)
+ROOT_MUTATION_BOUNDARY_RE = re.compile(
+    r"\b(mutation boundary|before (?:this )?(?:baseline|root-cause|root cause)|read-only|reversible diagnostics?|evidence-preserving|urgent restoration|reduce active harm)\b",
+    re.IGNORECASE,
+)
+ROOT_MAPPING_RE = re.compile(
+    r"\b(remediation mapping|failure class|addresses|mapped to|risk reduction|generic hardening|proposed fix|corrective action)\b",
+    re.IGNORECASE,
+)
 HAPPY_PATH_ONLY_RE = re.compile(
     r"\b(happy path only|only happy path|manual inspection only|no edge cases|skip armageddon)\b",
     re.IGNORECASE,
@@ -116,8 +149,22 @@ def field_value(body: str, label: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def strip_template_boilerplate(text: str) -> str:
+    text = re.sub(r"(?im)^.*Browser/runtime binaries:.*$", "", text)
+    text = BENIGN_TEMPLATE_CONTEXT_RE.sub("", text)
+    return text
+
+
+def section_body(sections: list[Section], heading: str) -> str:
+    for section in sections:
+        if section.heading == heading:
+            return section.body
+    return ""
+
+
 def validate(text: str) -> list[str]:
     errors: list[str] = []
+    context_text = strip_template_boilerplate(text)
     if not re.search(r"^#\s+\S", text, re.MULTILINE):
         errors.append("missing top-level title (# Title)")
     for required in [
@@ -164,6 +211,7 @@ def validate(text: str) -> list[str]:
     armageddon_section = ""
     generality_section = ""
     regression_section = ""
+    root_cause_section = ""
     sections = split_sections(text)
     for section in sections:
         if section.heading == "## Dependency and Tooling Preflight":
@@ -180,12 +228,14 @@ def validate(text: str) -> list[str]:
             generality_section = section.body
         elif section.heading == "## Regression Guardrails":
             regression_section = section.body
+        elif section.heading == "## Root-Cause Baseline":
+            root_cause_section = section.body
     if sota_section and not SOTA_RE.search(sota_section):
         errors.append("## SOTA, Standards, And Best Practices must document prior art, official docs/standards, mature libraries, best practices, rejected approaches, or implementation decision")
     if tooling_section:
         if not TOOLING_INSTALL_RE.search(tooling_section) and not REAL_BLOCKER_RE.search(tooling_section):
             errors.append("## Dependency and Tooling Preflight must name install/repair commands, no-install rationale, or real blockers")
-        if UI_RE.search(text) and not BROWSER_PROOF_RE.search(tooling_section):
+        if UI_RE.search(context_text) and not BROWSER_PROOF_RE.search(tooling_section):
             errors.append("UI/browser-facing plan must name browser smoke, Playwright, screenshot, visual, pixel, canvas, or accessibility proof")
     if deterministic_section:
         if USER_SURFACE_RE.search(text) and not DETERMINISTIC_RE.search(deterministic_section):
@@ -196,6 +246,20 @@ def validate(text: str) -> list[str]:
         errors.append("## Armageddon Mode must name edge cases, failure modes, attack scope, optimization opportunities, or must-fix threshold")
     if generality_section and not GENERALITY_RE.search(generality_section):
         errors.append("## Generality Guardrail must document existing mechanism, recurrence, general mechanism decision, or one-off justification")
+    if REMEDIATION_CONTEXT_RE.search(context_text):
+        if not root_cause_section:
+            errors.append("high-risk incident/remediation plan must include ## Root-Cause Baseline before remediation work")
+        else:
+            if not ROOT_EVIDENCE_RE.search(root_cause_section):
+                errors.append("## Root-Cause Baseline must include an evidence inventory such as timeline, logs/journals, metrics/readbacks, config/state, or user-observed facts")
+            if not ROOT_HYPOTHESIS_RE.search(root_cause_section):
+                errors.append("## Root-Cause Baseline must rank candidate causes or hypotheses with evidence and counter-evidence")
+            if not ROOT_MISSING_EVIDENCE_RE.search(root_cause_section):
+                errors.append("## Root-Cause Baseline must state missing evidence, why it is unavailable, and how uncertainty constrains remediation")
+            if not ROOT_MUTATION_BOUNDARY_RE.search(root_cause_section):
+                errors.append("## Root-Cause Baseline must define the pre-remediation mutation boundary")
+            if not ROOT_MAPPING_RE.search(root_cause_section):
+                errors.append("## Root-Cause Baseline must map each proposed remediation to a proven or hypothesized failure class")
     if regression_section:
         branch_strategy = field_value(regression_section, "Branch strategy")
         damage_radius = field_value(regression_section, "Damage radius")
