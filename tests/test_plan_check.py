@@ -220,6 +220,18 @@ class PlanCheckTests(unittest.TestCase):
         errors = module.validate(text)
         self.assertEqual([], errors)
 
+    def test_incident_remediation_without_root_cause_gate_fails(self):
+        module = load_module()
+        fixture = ROOT / "tests" / "fixtures" / "root-cause-gate-missing-bad.md"
+        errors = module.validate(fixture.read_text(encoding="utf-8"))
+        self.assertTrue(any("Root-Cause Baseline" in error for error in errors))
+
+    def test_incident_remediation_with_root_cause_gate_passes(self):
+        module = load_module()
+        fixture = ROOT / "tests" / "fixtures" / "root-cause-gate-good.md"
+        errors = module.validate(fixture.read_text(encoding="utf-8"))
+        self.assertEqual([], errors)
+
     def test_plan_init_output_passes_plan_check(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "plan.md"
