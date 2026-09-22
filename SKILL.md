@@ -20,6 +20,8 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - Use `scripts/mega_plan_init.py` to generate a plan skeleton when no canonical plan exists.
    - Use `scripts/mega_plan_check.py <plan.md>` before executing from a plan.
    - The plan must have SOTA/standards research, dependency/tooling preflight, deterministic real-user test, fulfillment/readback proof, Armageddon mode, generality guardrail, phases, subphases, commit lines, tests, success criteria, and checklist items.
+   - For incidents, outages, live infrastructure, production-adjacent systems, telemetry gaps, data loss, auth/deployment/device/network/service failures, recovery work, or remediation work, the plan must also include a `Root-Cause Baseline` before remediation phases.
+   - The root-cause baseline must separate proven causes, likely hypotheses, possible causes, disproven causes, missing evidence, and generic hardening. Every remediation must map to a proven or hypothesized failure class.
    - For substantial plans, generate or update the plan dashboard with `scripts/mega_plan_dashboard.py` or `scripts/mega_plan_init.py --dashboard`. The dashboard is a read view over the canonical plan, `.mega/state.jsonl`, and `.mega/evidence.jsonl`; do not hand-maintain a separate source of truth.
    - For lower-level agents, make every subphase decision-complete: exact objective, files or systems to inspect, allowed edit surface, verification command, and handoff criteria.
 
@@ -36,9 +38,11 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
    - SOTA/standards decision: current best-practice research, official docs/specs, mature libraries/frameworks, and rejected approaches.
    - Fulfillment proof: what final readback or side-effect check proves the requested outcome was actually completed.
    - Generality decision: reuse the existing general mechanism, create one if recurring behavior lacks a general owner, or justify a true one-off.
+   - Root-cause decision for incident/remediation work: evidence collected, hypotheses ranked, missing evidence constrained, mutation boundary declared, and remediation-to-cause mapping named.
 
 4. **Execute one subphase at a time**
    - For large/systemic damage radius, create or switch to the declared dedicated work branch before editing. If branch creation is blocked, stop and name the blocker before mutating files.
+   - For incident/remediation work, do not mutate beyond evidence collection, reversible diagnostics, evidence-preserving collection, or urgent restoration until the root-cause baseline is complete or a real blocker is recorded.
    - Re-read the plan before each subphase.
    - Edit only the current subphase.
    - If changed files exceed the planned touch surface, stop and call out scope expansion.

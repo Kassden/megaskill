@@ -102,6 +102,21 @@ Examples:
 
 Do not use "not installed", "not configured", or "no test script" as final verification reasons unless setup was attempted, rejected by approval policy, or blocked by credentials, platform incompatibility, destructive-action boundaries, or an external outage.
 
+## Root-Cause Baseline
+
+For incidents, outages, live infrastructure, production-adjacent systems, telemetry gaps, data loss, auth/deployment/device/network/service failures, recovery work, or remediation work, Megaskill requires root-cause analysis before remediation planning or mutation.
+
+A root-cause baseline must include:
+
+- trigger scope and affected surface
+- evidence inventory: timeline, current health, logs/journals, metrics/readbacks, recent changes, config/state, external dependencies, and user-observed facts
+- hypothesis model: proven, likely, possible, unlikely, and disproven causes with evidence and counter-evidence
+- missing-evidence policy: what could not be obtained, why, who or what could supply it, whether collection is destructive, and how uncertainty constrains remediation
+- mutation boundary: allowed pre-baseline actions are read-only probes, reversible diagnostics, evidence-preserving collection, and urgent restoration to regain access or reduce active harm
+- remediation mapping: every proposed fix names the proven or hypothesized failure class it addresses; generic hardening is labeled as risk reduction, not root-cause remediation
+
+Stop before implementation when a remediation plan jumps from symptoms to hardening, conflates missing guardrails with root cause, lacks outage-window evidence, or omits uncertainty. If evidence is unavailable, record a blocker or a bounded hypothesis; do not present the resulting hardening as a proven fix.
+
 ## Deterministic Real-User Experience Test
 
 For any interface, app, CLI, tool, workflow, agent surface, or user-facing path, first create or run a deterministic real-user experience test before broader verification.
