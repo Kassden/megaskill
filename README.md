@@ -39,6 +39,7 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 
 - Goal locking with acceptance criteria and out-of-scope boundaries.
 - Plan validation for SOTA/standards research, dependency/tooling preflight, deterministic real-user tests, fulfillment/readback proof, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
+- Root-cause baseline enforcement for incidents, outages, production-adjacent remediation, telemetry gaps, data loss, and live-system recovery.
 - Regression guardrail prompts before file edits.
 - Branch isolation for Large/Systemic regression risk before implementation.
 - Ordered execution state recording for multi-phase or multi-agent work.
@@ -72,6 +73,22 @@ Armageddon mode is the adversarial pass: it tears apart UI, APIs, tools, data pa
 ## General-Solution Guardrail
 
 Before implementing, Megaskill checks whether the request is one instance of a broader pattern. Use the existing general mechanism when one exists. If no general mechanism exists and recurrence is likely, create the general mechanism first, then implement the specific request through it. Only choose a one-off when it is truly isolated, low-risk, and unlikely to recur.
+
+## Decision Awareness And ADRs
+
+Megaskill should make important agent choices inspectable, not just the final diff. The planned direction is a first-class decision record system for choices that a reviewer would reasonably ask about later: UI structure, architecture patterns, branch strategy, scope expansion, verification tradeoffs, one-off versus general mechanisms, and incident remediation paths.
+
+The target shape is a third ledger beside ordered state and evidence:
+
+```text
+.mega/state.jsonl       what happened
+.mega/evidence.jsonl    how it was verified
+.mega/decisions.jsonl   why choices were made
+```
+
+Decision records should stay small and structured: question, chosen option, rejected alternatives, evidence references, tradeoffs, reversibility, and self-critique. For UI work, this means the agent records why it chose tabs over a sidebar, a modal over an inline panel, or a compact control over a verbose one, then names what would prove that choice wrong.
+
+This is intentionally not implemented yet. It is the next design topic for Megaskill, with ADR-style prior art and agent self-reflection patterns as inputs.
 
 ## Execution Loop
 
