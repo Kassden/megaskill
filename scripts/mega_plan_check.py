@@ -294,10 +294,15 @@ def validate(text: str) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("plan", help="path to markdown plan")
+    parser.add_argument('--runtime', action='store_true', help='require runtime contract and decision policy for execution')
     args = parser.parse_args()
 
     text = Path(args.plan).read_text(encoding="utf-8")
     errors = validate(text)
+    if args.runtime:
+        for heading in ('## Runtime Contract', '## Decision Record Policy'):
+            if heading not in text:
+                errors.append('missing required runtime section: ' + heading)
     if errors:
         print("Mega plan check failed:")
         for error in errors:
