@@ -43,6 +43,7 @@ class PlanDashboardTests(unittest.TestCase):
                 '{"command":"npx playwright test","cwd":"/tmp","exit_code":0,"note":"browser proof","phase":"1.1","state_event_id":"evt-1","timestamp":"2026-08-28T00:00:01+00:00"}\n',
                 encoding="utf-8",
             )
+            state.write_text(state.read_text().replace('"cwd":"/tmp"', '"cwd":' + __import__('json').dumps(str(cwd))), encoding='utf-8')
             result = subprocess.run(
                 [
                     sys.executable,

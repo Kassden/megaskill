@@ -8,10 +8,13 @@ import html
 import json
 import os
 import re
+import sys
 import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 DEFAULT_STATE = Path(".mega/state.jsonl")
@@ -108,15 +111,14 @@ def block(text: str) -> str:
 
 
 def status_for(records: list[dict[str, object]], phase: str, subphase: str = "") -> str:
-    candidates = [
-        str(record.get("status", ""))
-        for record in records
-        if str(record.get("phase", "")) in phase and (not subphase or str(record.get("subphase", "")) in subphase)
-    ]
-    for status in ["failed", "blocked", "active", "done", "archived", "planned"]:
-        if status in candidates:
-            return status
-    return "planned"
+    def number(value):
+        match = re.search(r'\d+(?:\.\d+)*', str(value))
+        return match.group(0) if match else ''
+    candidates = [record for record in records
+                  if number(record.get('phase')) == number(phase)
+                  and (not subphase or number(record.get('subphase')) == number(subphase))
+                  and record.get('kind') in ('phase', 'subphase', 'edit')]
+    return str(candidates[-1].get('status', 'planned')) if candidates else 'planned'
 
 
 def card(label: str, value: str) -> str:
@@ -128,7 +130,38 @@ def render_dashboard(plan_path: Path, state_path: Path, evidence_path: Path, gen
     sections = split_sections(text)
     plan_title = title(text)
     state_records, state_errors = read_jsonl(state_path)
+    target = plan_path.resolve()
+    state_records = [r for r in state_records if (Path(r.get('plan','')).resolve()
+        if Path(r.get('plan','')).is_absolute() else (Path(r.get('cwd','.')) / r.get('plan','')).resolve()) == target]
     evidence_records, evidence_errors = read_jsonl(evidence_path)
+    from mega_decision import read_records as decision_records, replay
+    decision_path = state_path.parent / 'decisions.jsonl'
+    decisions, decision_errors = decision_records(decision_path) if decision_path.exists() else ([], [])
+    current_decisions, replay_errors = replay(decisions)
+    decision_errors += replay_errors
+    decision_rows = ''.join('<tr>' + ''.join(f'<td>{html.escape(str(row.get(key, "")))}</td>'
+        for key in ('decision_id', 'status', 'question', 'decision', 'why', 'self_critique', 'disconfirming_test')) + '</tr>'
+        for row in current_decisions.values() if Path(row.get('plan','')).resolve() == plan_path.resolve()) or '<tr><td colspan="7">No material decisions recorded for this plan.</td></tr>'
+    agents_path = state_path.parent / 'agents.json'
+    try:
+        agents = json.loads(agents_path.read_text()).get('agents',[]) if agents_path.exists() else []
+        agent_rows = ''.join('<tr>' + ''.join(f'<td>{html.escape(str(row.get(key,"")))}</td>'
+            for key in ('agent_id','task_id','role','status','objective')) + '</tr>' for row in agents) or '<tr><td colspan="5">No child assignments recorded.</td></tr>'
+    except (ValueError, AttributeError):
+        agent_rows = '<tr><td colspan="5">Invalid agent registry; cleanup status unverified.</td></tr>'
+    from mega_completion import evaluate
+    runtime_rows = []
+    for contract_path in sorted((state_path.parent/'tasks').glob('*.json')):
+        try:
+            contract = json.loads(contract_path.read_text())
+            if Path(contract.get('plan','')).resolve() != plan_path.resolve():
+                continue
+            result = evaluate(state_path.parent, contract['task_id'])
+            row = (contract['task_id'], result['verdict'], ', '.join(result['unmet']), result['reason'])
+            runtime_rows.append('<tr>' + ''.join(f'<td>{html.escape(str(value))}</td>' for value in row) + '</tr>')
+        except (ValueError, KeyError, TypeError, OSError):
+            runtime_rows.append('<tr><td colspan="4">Invalid runtime contract; completion unverified.</td></tr>')
+    runtime_html = ''.join(runtime_rows) or '<tr><td colspan="4">No runtime contract for this plan.</td></tr>'
     regression = section_body(sections, "## Regression Guardrails")
     damage = field_value(regression, "Damage radius")
     branch = field_value(regression, "Branch strategy")
@@ -178,7 +211,7 @@ def render_dashboard(plan_path: Path, state_path: Path, evidence_path: Path, gen
         "</tr>"
         for record in state_records[-50:]
     ) or "<tr><td colspan=\"6\" class=\"muted\">No ordered state records yet.</td></tr>"
-    no_go = state_errors + evidence_errors + [
+    no_go = state_errors + evidence_errors + decision_errors + [
         str(record.get("summary", ""))
         for record in state_records
         if str(record.get("status", "")) in {"failed", "blocked"}
@@ -209,7 +242,7 @@ def render_dashboard(plan_path: Path, state_path: Path, evidence_path: Path, gen
     main {{ display: grid; grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); min-height: calc(100vh - 104px); }}
     nav {{ padding: 24px; border-right: 1px solid var(--line); background: #f1f4f1; position: sticky; top: 0; height: 100vh; overflow: auto; }}
     nav a {{ display: block; color: var(--accent); text-decoration: none; margin: 0 0 10px; font-size: 14px; font-weight: 600; }}
-    section {{ padding: 28px 36px; border-bottom: 1px solid var(--line); background: var(--panel); }}
+    section {{ padding: 28px 36px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; max-width: 100%; overflow-x: auto; }}
     section:nth-child(even) {{ background: #fbfcfa; }}
     .subtitle, .muted {{ color: var(--muted); }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
@@ -265,6 +298,9 @@ def render_dashboard(plan_path: Path, state_path: Path, evidence_path: Path, gen
       <section id="phases"><h2>Phases</h2>{"".join(phase_html) or '<p class="muted">No phases found.</p>'}</section>
       <section id="state"><h2>Ordered State</h2><table><tr><th>Time</th><th>Phase</th><th>Subphase</th><th>Kind</th><th>Status</th><th>Summary</th></tr>{state_rows}</table></section>
       <section id="evidence"><h2>Evidence</h2><table><tr><th>Time</th><th>Phase</th><th>Command</th><th>Exit</th><th>State Event</th></tr>{evidence_rows}</table></section>
+      <section id="decisions"><h2>Decision records</h2><table><tr><th>ID</th><th>Status</th><th>Question</th><th>Choice</th><th>Why</th><th>Self-critique</th><th>Disconfirming test</th></tr>{decision_rows}</table></section>
+      <section id="runtime"><h2>Runtime acceptance</h2><table><tr><th>Task</th><th>Verdict</th><th>Unmet obligations</th><th>Reason</th></tr>{runtime_html}</table></section>
+      <section id="children"><h2>Subagent lifecycle</h2><table><tr><th>Agent</th><th>Task</th><th>Role</th><th>Status</th><th>Assignment</th></tr>{agent_rows}</table><p>Completed is not closed. Closure requires a native tool receipt.</p></section>
       <section id="gates"><h2>Go / No-Go Gates</h2><ul>{no_go_html}</ul></section>
       <section id="archive"><h2>Archive</h2><p>Archived or superseded phases remain evidence only. The canonical plan and ledgers above own current execution state.</p></section>
     </div>
