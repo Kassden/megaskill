@@ -11,6 +11,12 @@ Use this shape for lower-level agent plans.
 ## Acceptance Criteria
 - <what proves success>
 
+## Runtime Contract And Decision Record Policy
+- Task mode: plan/review/execute/monitor; execution must be authorized.
+- Exact obligation IDs and relevant proof artifacts:
+- Material decisions requiring alternatives/self-critique and ADR promotion:
+- Delegated roles, allowed edit surfaces, and native close/readback requirements:
+
 ## Research
 - Built-in options:
 - Off-the-shelf options:
@@ -109,6 +115,8 @@ Rules:
 - For incidents, outages, live infrastructure, production-adjacent systems, telemetry gaps, data loss, auth/deployment/device/network/service failures, recovery work, or remediation work, do not create a plan without a `Root-Cause Baseline`.
 - A root-cause baseline must inventory evidence, rank hypotheses, name missing evidence and uncertainty, declare the mutation boundary, and map every remediation to a proven or hypothesized failure class.
 - For multi-phase or multi-agent plans, include ordered state and dashboard fields or explicitly justify why the plan is too small to need them.
+- For execution, register exact obligations and use current linked test/readback proof. Stop hooks and final-gate must refer to the same contract. Record material decisions before consequential action, and promote durable accepted decisions to ADRs.
+- Delegate only useful independent work. Bound children, collect results, call native close_agent, and record closure receipts. No mandatory six-agent roster.
 - Do not create a subphase without commit, tests, success criteria, planned touch files, and checklist.
 - Make every subphase independently valid unless explicitly impossible.
 - Name the exact evidence the lower-level agent must produce.

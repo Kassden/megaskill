@@ -28,6 +28,11 @@ Megaskill Handoff
 - Atomic commit split:
 - Remaining gaps:
 - Whole-plan final gate:
+- Original outcome and unmet obligation IDs:
+- Task contract and current proof:
+- Material decision IDs / ADR links:
+- Owned children closed (native receipts):
+- Installed / trusted / runtime-tested hook coverage:
 - Verdict: done | blocked | not done
 ```
 
