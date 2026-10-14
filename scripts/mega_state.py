@@ -56,9 +56,8 @@ def state_path(raw: str | None) -> Path:
 
 
 def append_record(path: Path, record: dict[str, object]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    from mega_store import append_jsonl
+    append_jsonl(path, record)
 
 
 def read_records(path: Path) -> tuple[list[dict[str, object]], list[str]]:
@@ -98,7 +97,7 @@ def validation_errors(records: list[dict[str, object]], parse_errors: list[str])
             errors.append(f"line {line}: duplicate event_id: {event_id}")
         seen.add(event_id)
         timestamp = str(record.get("timestamp", ""))
-        sequence = str(record.get("sequence", line))
+        sequence = int(record.get("sequence", line))
         current_key = (timestamp, sequence)
         if previous_key and current_key < previous_key:
             errors.append(f"line {line}: event order moved backwards")
@@ -145,31 +144,44 @@ def plan_subphases(path: Path) -> list[tuple[str, str]]:
 
 
 def subphase_completed(records: list[dict[str, object]], number: str, title: str) -> bool:
-    wanted_number = normalize(number)
-    wanted_title = normalize(title)
-    for record in records:
-        status = str(record.get("status", ""))
-        if status not in {"done", "archived"}:
-            continue
-        subphase = normalize(record.get("subphase", ""))
-        phase = normalize(record.get("phase", ""))
-        summary = normalize(record.get("summary", ""))
-        haystack = " ".join([subphase, phase, summary])
-        if wanted_number in haystack or (wanted_title and wanted_title in haystack):
-            return True
-    return False
+    relevant = [r for r in records if str(r.get('subphase', '')).strip() == number
+                and r.get('kind') in {'subphase', 'edit'}]
+    return bool(relevant) and relevant[-1].get('kind') == 'subphase' and relevant[-1].get('status') == 'done'
 
 
 def blocked_records(records: list[dict[str, object]]) -> list[dict[str, object]]:
-    return [
-        record
-        for record in records
-        if str(record.get("kind", "")) == "blocker"
-        and str(record.get("status", "")) in {"blocked", "failed"}
-    ]
+    latest = {}
+    for record in records:
+        if record.get('kind') == 'blocker':
+            key = record.get('metadata', {}).get('blocker_id', record.get('subphase', ''))
+            latest[key] = record
+    return [r for r in latest.values() if r.get('status') in {'blocked', 'failed'}]
 
 
 def cmd_final_gate(args: argparse.Namespace) -> int:
+    if getattr(args, 'task', None):
+        from mega_completion import evaluate
+        from mega_store import read_json, safe_id
+        from mega_agents import open_agents
+        root = Path(args.root).resolve()
+        try:
+            contract = read_json(root / 'tasks' / (safe_id(args.task) + '.json'))
+        except (ValueError, OSError):
+            print('Mega final gate failed: invalid task contract.')
+            return 1
+        if not contract or Path(contract['plan']).resolve() != Path(args.plan).resolve():
+            print('Mega final gate failed: requested plan does not match task contract.')
+            return 1
+        parent = contract.get('session_id')
+        children = [c for c in open_agents(root, args.task) if c.get('parent_session_id') == parent]
+        if children:
+            print('Mega final gate failed: owned children still require native closure receipts.')
+            return 1
+        result = evaluate(Path(args.root), args.task)
+        valid = result['verdict'] == ('complete' if args.verdict == 'done' else 'blocked')
+        print(json.dumps(result, sort_keys=True))
+        print('Mega final gate passed.' if valid else 'Mega final gate failed.')
+        return 0 if valid else 1
     records, parse_errors = read_records(state_path(args.file))
     errors = validation_errors(records, parse_errors)
     if errors:
@@ -182,6 +194,15 @@ def cmd_final_gate(args: argparse.Namespace) -> int:
     except FileNotFoundError as exc:
         print(f"Mega final gate failed: {exc}")
         return 1
+    if not subphases or len({n for n, _ in subphases}) != len(subphases):
+        print('Mega final gate failed: plan needs nonempty unique subphases.')
+        return 1
+    target = Path(args.plan).resolve()
+    def belongs(record):
+        raw = Path(str(record.get('plan', '')))
+        resolved = raw.resolve() if raw.is_absolute() else (Path(str(record.get('cwd', ''))) / raw).resolve()
+        return resolved == target
+    records = [r for r in records if belongs(r)]
     blockers = blocked_records(records)
     incomplete = [
         f"Subphase {number}: {title}"
@@ -208,6 +229,12 @@ def cmd_final_gate(args: argparse.Namespace) -> int:
     if args.verdict == "blocked" and not blockers:
         print("Mega final gate failed: blocked verdict requires a blocker event in the state ledger.")
         return 1
+    if args.verdict == 'blocked':
+        covered = {str(r.get('subphase', '')) for r in blockers}
+        required = {n for n, title in subphases if not subphase_completed(records, n, title)}
+        if not required.issubset(covered):
+            print('Mega final gate failed: independent incomplete subphases are not blocked.')
+            return 1
     if args.whole_plan and incomplete and not blockers:
         print("Mega final gate failed: whole-plan request still has executable incomplete subphases and no blocker.")
         for item in incomplete:
@@ -321,6 +348,8 @@ def main() -> int:
     final_gate = sub.add_parser("final-gate", help="check whether a final handoff is allowed")
     final_gate.add_argument("--plan", required=True)
     final_gate.add_argument("--file")
+    final_gate.add_argument('--task', help='use strict task contract and current linked proof')
+    final_gate.add_argument('--root', default='.mega')
     final_gate.add_argument("--verdict", choices=["done", "blocked", "not-done"], default="done")
     final_gate.add_argument(
         "--whole-plan",

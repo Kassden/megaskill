@@ -169,6 +169,7 @@ class MegaStateTests(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
+            state_file.write_text(state_file.read_text().replace('"cwd":"/tmp"', '"cwd":' + __import__('json').dumps(str(cwd))), encoding='utf-8')
             result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "done", "--whole-plan")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("Mega final gate passed", result.stdout)
@@ -186,6 +187,7 @@ class MegaStateTests(unittest.TestCase):
                 '{"branch":"","cwd":"/tmp","damage_radius":"","event_id":"evt-1","kind":"blocker","metadata":{},"phase":"1","plan":"PLAN.md","related_event_ids":[],"status":"blocked","subphase":"1.1","summary":"missing credentials","timestamp":"2026-08-28T00:00:00+00:00"}\n',
                 encoding="utf-8",
             )
+            state_file.write_text(state_file.read_text().replace('"cwd":"/tmp"', '"cwd":' + __import__('json').dumps(str(cwd))), encoding='utf-8')
             result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "blocked", "--whole-plan")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("Mega final gate passed", result.stdout)
