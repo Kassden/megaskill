@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "original-goal-checkpoint",
+      "prompt": "$megaskill finish both deliverables without stopping after the first or after writing an ADR.",
+      "expected_output": "Both artifacts read back; current proofs linked; premature stop continued.",
+      "assertions": ["live canary has continuation and completion receipts", "both artifacts contain exact required bytes"],
+      "verification": "scripts/mega_hook_canary.py --execute"
+    },
+    {
+      "id": "release-blocker-design-work",
+      "prompt": "$megaskill continue the PCB design; missing qualification blocks fabrication, while independent design work remains authorized.",
+      "expected_output": "Only affected obligations blocked; independent work continues; engineering choices are recorded.",
+      "assertions": ["partial blocker does not stop independent obligation", "external blockers have typed evidence and resolution", "decision records require alternatives and critique"],
+      "verification": "tests/test_completion_runtime.py and tests/test_mega_decision.py"
+    },
+    {
+      "id": "bounded-child-lifecycle",
+      "prompt": "Delegate independent fixes and verify them. Close each owned child when its result is collected; leave unrelated agents alone.",
+      "expected_output": "At most three open children; completed children still require native closure receipts; final gate demands own-parent cleanup.",
+      "assertions": ["quota and overlap tests pass", "close receipts match native tool result", "cross-parent cleanup forbidden"],
+      "verification": "tests/test_mega_agents.py and tests/test_mega_hooks.py"
+    }
+  ],
+  "baseline": "Previous Git revision completion gate; comparisons are deterministic contract behavior, not a population-level model success-rate claim."
+}
