@@ -1,5 +1,7 @@
 # Megaskill Decision Awareness And ADR Implementation Plan
 
+Implementation update (2026-10-14): `mega_decision.py` now provides append-only record/validate/summary/status/promote, critique fields, exact task/plan linkage, lifecycle and supersession. Durable accepted choices become Markdown ADRs; the dashboard renders decisions and the runtime records stop decisions. The canonical implementation and verification record is `MEGASKILL_RUNTIME_IMPLEMENTATION_PLAN.md`. This proposal remains historical design context, not evidence that every future extension is complete.
+
 ## GOAL
 - Implement a first-class Megaskill decision-awareness system that records why agents choose specific approaches, alternatives, verification strategies, UI/product patterns, risk boundaries, and remediation paths, then makes those decisions available to the agent, reviewer, dashboard, and final handoff.
 

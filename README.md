@@ -453,3 +453,11 @@ The tests cover:
 ## License
 
 MIT
+
+## Runtime enforcement, ADRs, and subagents
+
+Megaskill now includes task-scoped completion (`mega_task.py` / `mega_completion.py`), synchronous lifecycle handlers (`mega_hooks.py`), reversible installation (`mega_hooks_install.py`), append-only decision records and ADR promotion (`mega_decision.py`), and bounded role assignments with native closure receipts (`mega_agents.py`). See [runtime enforcement](references/runtime-enforcement.md), [decision records](references/decision-records.md), and [subagent dispatch](references/subagent-dispatch.md).
+
+Install owned handlers with `python3 scripts/mega_hooks_install.py --apply`, then review/trust their exact definitions in Codex `/hooks`. Configuration presence does not establish runtime enforcement; run the canary and inspect invocation evidence. The installer preserves unrelated hooks. User cancellation remains authoritative, and stalled continuation ends explicitly as unfinished.
+
+Roles are selected when useful: thinker, planner, executor, tester, verifier, with the parent as orchestrator. Three open children is the default limit. Completed children must be closed through Codex's native close tool before final handoff. Do not deploy a fixed six-agent chain or recursively fan out.

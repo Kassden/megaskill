@@ -9,6 +9,16 @@ Use Megaskill to turn a goal into guarded, atomic, verified execution.
 
 Core rule: lock the goal, write or validate a canonical plan, execute the smallest independently valid subphase, prove it, record evidence, and continue until the full goal is done or genuinely blocked.
 
+## Runtime Enforcement, Decisions, And Delegation
+
+- For execution, read `references/runtime-enforcement.md` and register the original outcome with `scripts/mega_task.py register --id TASK --plan PLAN.md --goal "OUTCOME" --session SESSION_ID`. Use the session ID supplied by the hook or `CODEX_THREAD_ID`. A plan/review request does not authorize execution.
+- Prove each exact obligation with `mega_task.py prove --id TASK --obligation N.N --kind test` and a separate `--kind readback`, naming relevant `--artifact` files and the verification command after `--`. Mark done with the returned proof event IDs. Hooks evaluate those contracts automatically; the manual final gate uses `--task TASK --root .mega`.
+- Preserve the original outcome across follow-up messages and compaction. A completed ADR, commit, subagent or small slice is a checkpoint. A fabrication/deploy/release blocker only blocks affected obligations; continue independent design or verification work.
+- Read `references/decision-records.md` for material architecture, UI/product, scope, remediation, and stop decisions. Record alternatives, assumptions, self-critique, a disconfirming test and reversibility before committing to consequential choices. Make engineering choices delegated by the user and record why; do not hand those choices back unnecessarily. Promote durable accepted choices into Markdown ADRs.
+- When delegation is authorized, read `references/subagent-dispatch.md`. Select thinker/planner/executor/tester/verifier responsibilities as needed; the parent is the orchestrator. Keep immediate critical-path work local, cap open children at three, give disjoint edit surfaces and concrete proof, and prohibit recursive fan-out by default.
+- Collect child results, integrate and verify, then call the native `close_agent` tool and record its actual result with `mega_agents.py close`. Completed children still occupy slots. Run `mega_agents.py cleanup` before final handoff; never invent a closed status or close unrelated sessions.
+- Installed hooks still need native trust review. Runtime proof, not configuration presence, establishes enforcement. Never bypass trust to claim deployment.
+
 ## Required Workflow
 
 1. **Lock the goal**
@@ -74,6 +84,7 @@ Core rule: lock the goal, write or validate a canonical plan, execute the smalle
 7. **Finish with evidence**
    - Do not call work done without evidence against the goal.
    - Before any final answer for multi-phase work, run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` or `--verdict blocked` when a real blocker is recorded.
+   - For registered execution tasks, add `--task TASK --root .mega` to use current linked proof; the legacy state-only gate is retained for historical workflows and does not certify artifact freshness.
    - If the final gate reports incomplete subphases and no blocker, do not final. Continue the next executable subphase.
    - Use `scripts/mega_evidence.py summary` to help build the final proof block.
    - Final verdict must be `done`, `blocked`, or `not done`.
