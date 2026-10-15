@@ -2,6 +2,20 @@
   "schema_version": 1,
   "cases": [
     {
+      "id": "pcb-actual-outcome-not-proxy",
+      "prompt": "Until ERC, DRC, parity and unrouted findings are zero, do not stop. A successful inspection command is not a passing board.",
+      "expected_output": "A report with 723 unrouted connections is rejected even when test/readback commands succeed; source-linked zero metrics are required.",
+      "assertions": ["nonzero metric prevents strict completion", "missing policy cannot use a legacy final-gate bypass", "missing native Stop receipt is unverified"],
+      "verification": "tests/test_outcome_enforcement.py and tests/test_mega_state.py"
+    },
+    {
+      "id": "website-quality-and-continuation",
+      "prompt": "Can you check the output and fix it, continue until it matches? The animation existing does not mean its quality is acceptable.",
+      "expected_output": "Continuation is not status-only; rejected, executor-authored or stale-source reviews cannot certify quality; the whole goal remains bound.",
+      "assertions": ["independent review required by the quality policy", "all rebound executors excluded from self-review", "new task cannot silently replace unfinished goal"],
+      "verification": "tests/test_outcome_enforcement.py"
+    },
+    {
       "id": "original-goal-checkpoint",
       "prompt": "$megaskill finish both deliverables without stopping after the first or after writing an ADR.",
       "expected_output": "Both artifacts read back; current proofs linked; premature stop continued.",
