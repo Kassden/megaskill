@@ -4,6 +4,7 @@
 - Implement and install task-scoped completion hooks, decision records and ADRs, and bounded subagent dispatch with actual close receipts.
 
 ## Acceptance Criteria
+- Runtime/manual completion requires pinned outcome assertions, not merely successful agent-selected commands. Missing hook receipts are reported as unverified runtime enforcement, never installation success.
 - Completion cannot leak across plans or IDs, use stale proof, or accept an unrelated blocker.
 - Installed lifecycle handlers continue executable work and preserve user interruption and planning-only tasks.
 - Decision CLI validates self-critique and promotes durable decisions into Markdown ADRs.
@@ -16,6 +17,7 @@
 - Official sources: https://learn.chatgpt.com/docs/hooks and https://learn.chatgpt.com/docs/agent-configuration/subagents, refreshed during this run; role names are our operating convention, not a claimed universal SOTA standard.
 
 ## Root-Cause Baseline
+- 2026-10-15 forensic extension: PCB session 01a119b9 ended after an explicit failed final gate (723 unrouted, 16 ERC) with no task Stop audit. Missing invocation is observed; the host-side reason remains unproven. Website session 01a0c45e received a complete Stop verdict using file/keyword/animation-presence checks, then acknowledged clipped logo slices and inadequate visual verification. Proven failure classes: missing runtime observability and outcome-free proof policies. Do not label host restart or qualitative quality as verified from a synthetic canary.
 - Evidence inventory: config/state readback shows the existing checker uses substring matching and all-plan historical records; inspected user hooks lacked Stop; PCB transcript records checkpoint stopping and engineering/release blocker confusion.
 - Proven causes: completion identity and lifecycle defects; voluntary invocation. Likely hypotheses: compaction drift and unmanaged completed children.
 - Missing evidence: real event coverage and exact trust semantics on installed runtime require canaries; session histories cannot prove current live agent status.
@@ -73,6 +75,7 @@
   - `scripts/mega_store.py`
   - `scripts/mega_task.py`
   - `scripts/mega_completion.py`
+  - `scripts/mega_outcomes.py`
   - `scripts/mega_state.py`
   - `scripts/mega_decision.py`
   - `scripts/mega_agents.py`
@@ -83,6 +86,7 @@
   - `scripts/mega_plan_dashboard.py`
   - `scripts/mega_plan_init.py`
   - `tests/test_completion_runtime.py`
+  - `tests/test_outcome_enforcement.py`
   - `tests/test_mega_state.py`
   - `tests/test_mega_decision.py`
   - `tests/test_mega_agents.py`
@@ -99,6 +103,7 @@
   - `evals/evals.json`
   - `docs/adr/ADR-001-completion-enforcement.md`
   - `docs/adr/ADR-002-bounded-delegation.md`
+  - `docs/adr/outcome-contracts-v2.md`
   - `agents/roles/thinker.toml`
   - `agents/roles/planner.toml`
   - `agents/roles/executor.toml`
@@ -145,9 +150,42 @@
   - [x] Integrate workflow and dashboard, run realistic canaries and independent review.
   - [x] Close owned agents and read back the empty cleanup registry; final proof/gate and delivery are recorded below.
 
-## Delivery Evidence
+## Original Delivery Evidence (before the outcome-enforcement repair)
 - Native Codex 0.162.1 lifecycle canaries: actual live-canary session receipts show premature-stop continuation and subsequent complete verdict; both files contain exact requested bytes. Protocol replay records are excluded from live proof.
 - Independent verifier cleared the reproduced identity, cancellation, corruption, stale proof, blocker, mode and parent-ownership cases after fixes. All five children created for this task were closed through native tools; registry cleanup is empty.
 - Dashboard browser readback shows ADRs, runtime acceptance and child lifecycle; desktop/mobile geometry has no document overflow after table containment fix.
 - User hook file has ten owned synchronous definitions; exact definitions were reviewed/trusted through native UI. Six role profiles match shipped templates, and native concurrent-thread cap is three. Unrelated hook enabled states are preserved.
 - Final contract evidence, verification outputs and gate results are in `.mega/tasks/runtime-repair.events.jsonl`, `.mega/evidence.jsonl`, and `.mega/receipts/`. Local-only runtime coverage is proven; existing sessions may need resume/restart to load the new configuration.
+
+## Phase 4: Real-session outcome enforcement repair
+### Subphase 4.1: Pin outcome acceptance
+- Commit: fix(megaskill): require actual outcome assertions for runtime completion
+- Tests: reproduced PCB nonzero metric and website rejected-review fixtures; stale report/input and malformed policy tests; full suite.
+- Success Criteria: runtime and manual gates refuse absent outcome policies, failing metrics, executor self-review and stale input coverage even with successful proof commands.
+- Checklist:
+  - [x] Implement declarative text, JSON and independent-review assertions; explicit policy migration; retain proof identity and freshness.
+### Subphase 4.2: Observe lifecycle and preserve continuation intent
+- Commit: fix(megaskill): audit lifecycle bypasses and resume unfinished goals
+- Tests: missing hook receipts, audited pause/status branches, keep-going and bare-skill resume, explicit rejection reopening, native tool naming.
+- Success Criteria: runtime readiness is per-session and handler-revision specific; absence is not claimed as enforcement; user interruption and read-only requests remain respected.
+- Checklist:
+  - [x] Implement read-only runtime diagnostics and lifecycle receipts, repair resume and rejection handling.
+### Subphase 4.3: Verify and deliver the repaired policy
+- Commit: docs(megaskill): document outcome contracts and runtime coverage limits
+- Tests: regression suite, protocol and live outcome canary, real PCB/website read-only diagnostic, skill validation and independent review where authorized.
+- Success Criteria: changed code is tested and installed; live canary proves actual rejected outcome cannot finish; real-session runtime gaps remain explicitly unverified unless observed live.
+- Checklist:
+  - [x] Update docs, ADR and eval cases; verify exact installed code and report remaining host boundaries without claiming PCB/website designs are fixed.
+### Subphase 4.4: Verify the affected PCB host
+- Commit: verification-only runtime rollout; no PCB design commit
+- Tests: same-session current prompt, tool and Stop receipts after a safe native host reload if needed.
+- Success Criteria: the affected PCB host invokes the installed policy; local canary evidence is not substituted for it. Restarting active PCB work requires approval.
+- Checklist:
+  - [ ] Verify current native hook coverage in session 01a119b9-9683-7a23-85c2-63806be19050, or retain a scoped approval blocker for interrupting/restarting that active host.
+
+## Outcome-Repair Delivery Evidence
+- Fresh frozen-source run: 189 tests, no failures, errors or skips. Deterministic old-versus-new replays show PCB, rejected website review and missing-policy false completions changing from complete to continue.
+- Two independent reviewers found additional authority/ownership/canary gaps; the retained reproducer now rejects all four second-pass defects. Both native verifier sessions were closed and the task's open-child registry is empty.
+- Native canary `mega-canary-dk1niowo` records successful proofs for WRONG output, then a specific outcome-rejection Stop, corrected output and subsequent completion in the same actual session. Generic continuation or mixed/reversed session receipts cannot substitute for that proof.
+- Installed handlers execute this checkout; the ten reviewed definitions are unchanged. Source-linked reports and task proof receipts live under `.mega/verification/` and `.mega/tasks/runtime-repair.events.jsonl`.
+- PCB host invocation remains unverified, with no current prompt/tool/Stop receipt. Website Stop/tool invocation is observed; complete prompt-lifecycle coverage awaits a current prompt. Do not present either as the actual project being finished. A controlled PCB-host reload may interrupt work and requires approval; this is obligation 4.4, not a completed local test.

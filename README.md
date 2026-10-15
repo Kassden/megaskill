@@ -251,6 +251,7 @@ Check that a whole-plan final handoff is allowed:
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_state.py final-gate \
   --plan PLAN.md \
+  --task TASK --root .mega \
   --whole-plan \
   --verdict done
 ```
@@ -459,5 +460,13 @@ MIT
 Megaskill now includes task-scoped completion (`mega_task.py` / `mega_completion.py`), synchronous lifecycle handlers (`mega_hooks.py`), reversible installation (`mega_hooks_install.py`), append-only decision records and ADR promotion (`mega_decision.py`), and bounded role assignments with native closure receipts (`mega_agents.py`). See [runtime enforcement](references/runtime-enforcement.md), [decision records](references/decision-records.md), and [subagent dispatch](references/subagent-dispatch.md).
 
 Install owned handlers with `python3 scripts/mega_hooks_install.py --apply`, then review/trust their exact definitions in Codex `/hooks`. Configuration presence does not establish runtime enforcement; run the canary and inspect invocation evidence. The installer preserves unrelated hooks. User cancellation remains authoritative, and stalled continuation ends explicitly as unfinished.
+
+### Outcome enforcement, not checkpoint certification
+
+Execute-mode registration now requires `--acceptance ACCEPTANCE.json`: pinned exact-text, JSON-value or independent-review assertions for every obligation. A successful command, screenshot file or CSS animation cannot substitute for the requested outcome. Report/review source hashes and proof coverage must be current. Existing tasks migrate explicitly with `mega_task.py acceptance`; migration revokes prior done receipts. Unfinished bound goals cannot silently be replaced by a smaller task.
+
+`mega_task.py runtime --id TASK` reports current **same-session** prompt, tool and Stop observations. Missing invocation is unverified, not healthy. Native trust and host support still apply; no hook can force a host that does not invoke it. State-only `final-gate --verdict done` is no longer a certification path; supply `--task TASK --root .mega`. See [outcome schemas and coverage limits](references/runtime-enforcement.md).
+
+Regression cases reproduce the PCB stopping with nonzero routing counts and a website passing proxy checks despite a rejected quality review. The live canary deliberately records successful proofs for a wrong output and must show that specific outcome being rejected before correction and final completion. This tests the enforcement mechanism, not the quality or completion of those actual projects.
 
 Roles are selected when useful: thinker, planner, executor, tester, verifier, with the parent as orchestrator. Three open children is the default limit. Completed children must be closed through Codex's native close tool before final handoff. Do not deploy a fixed six-agent chain or recursively fan out.
