@@ -150,7 +150,7 @@ class MegaStateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("done verdict has incomplete plan subphases", result.stdout)
 
-    def test_final_gate_accepts_done_when_all_subphases_complete(self):
+    def test_state_only_history_cannot_certify_done_even_when_all_marked_complete(self):
         with tempfile.TemporaryDirectory() as tmp:
             cwd = Path(tmp)
             plan = cwd / "PLAN.md"
@@ -171,8 +171,8 @@ class MegaStateTests(unittest.TestCase):
             )
             state_file.write_text(state_file.read_text().replace('"cwd":"/tmp"', '"cwd":' + __import__('json').dumps(str(cwd))), encoding='utf-8')
             result = run_state(cwd, "final-gate", "--plan", str(plan), "--file", str(state_file), "--verdict", "done", "--whole-plan")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertIn("Mega final gate passed", result.stdout)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("state-only history cannot certify", result.stdout)
 
     def test_final_gate_accepts_blocked_with_blocker_event(self):
         with tempfile.TemporaryDirectory() as tmp:

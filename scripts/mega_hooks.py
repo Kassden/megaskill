@@ -9,6 +9,8 @@ import sys
 from mega_store import atomic_json, append_jsonl, binding_root, locked, read_json, safe_id
 from mega_task import task_path, event
 from mega_completion import evaluate
+from mega_outcomes import handler_revision, receipt_path
+from datetime import datetime, timezone
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -54,16 +56,25 @@ def handle(payload):
     path = state_for(payload)
     sid = payload['session_id']
     state = read_json(path, {})
+    # Record invocation before every early return, including absent bindings and status/pause turns.
+    append_jsonl(receipt_path(sid), {'event': name, 'session_id': sid,
+                 'turn_id': payload.get('turn_id'), 'timestamp': datetime.now(timezone.utc).isoformat(),
+                 'handler_revision': handler_revision(), 'task_id': state.get('task_id') if isinstance(state, dict) else None})
     if path.exists() and not valid_binding(state, sid):
         raise ValueError('invalid persisted session binding')
     if name == 'UserPromptSubmit':
         prompt = payload.get('prompt', '')
+        prompt = re.sub(r'^<hook_prompt\b[^>]*>(.*?)</hook_prompt>$', r'\1', prompt, flags=re.S)
         if prompt.startswith('Megaskill continuation:'):
             state['status_turn'] = False
         else:
+            plain = prompt.strip().lower()
+            read_only = bool(re.search(r'\b(?:review(?:ing)?|audit(?:ing)?|inspect(?:ing)?|report|diagnos\w*)\b.*\bonly\b|\b(?:do not|don.t|never)\s+(?:execute|implement|fix|repair|make changes|edit)\b', plain))
             mode = activation(prompt)
             replacement = bool(re.search(r'(?i)\b(new task|replace (?:this|the) task|start over)\b', prompt))
-            if mode and state.get('task_id') and not replacement and evaluate(Path(state['root']), state['task_id'])['verdict'] != 'complete':
+            if read_only and state:
+                state['status_turn'] = True
+            elif mode and state.get('task_id') and not replacement and evaluate(Path(state['root']), state['task_id'], require_outcomes=True)['verdict'] != 'complete':
                 # Follow-ups steer the existing goal; reviews can end without replacing it.
                 state.update(status_turn=(mode == 'plan'), paused=False)
                 if mode == 'execute':
@@ -82,6 +93,8 @@ def handle(payload):
                              session_id=sid, status_turn=False, stall_count=0)
             elif state:
                 plain = prompt.strip().lower()
+                execution_followup = bool(re.search(r'^(continue|resume|finish|go ahead|keep goin(?:g)?|solve it)\b|^can you\b.*\b(fix|repair|finish|implement|continue)\b|\bcontinue until\b', plain))
+                execution_followup = execution_followup and not re.search(r'\b(do not|don.t|never)\s+(execute|implement|fix|repair|continue)\b', plain)
                 if re.fullmatch(r'(?:please\s+)?(?:stop|cancel|pause)(?:\s+(?:(?:this|the|current)\s+)*(?:task|work|working on this))?(?:\s+(?:now|please))?[.!]?', plain):
                     state['paused'] = True
                     if state.get('task_id'):
@@ -91,7 +104,7 @@ def handle(payload):
                             contract['status'] = 'cancelled' if 'cancel' in plain else 'paused'
                             contract['lifecycle_reason'] = prompt
                             atomic_json(contract_path, contract)
-                elif re.search(r'^(continue|resume|finish|go ahead)\b', plain):
+                elif execution_followup or plain in ('$megaskill', 'megaskill'):
                     state['paused'] = False; state['status_turn'] = False
                     if state.get('task_id'):
                         contract_path = task_path(Path(state['root']), state['task_id'])
@@ -100,7 +113,14 @@ def handle(payload):
                             contract['status'] = 'active'; atomic_json(contract_path, contract)
                 else:
                     # A question can finish as a status turn while the task remains bound.
-                    state['status_turn'] = bool(re.search(r'^(what|why|how|is|are|can you tell|do we|show|review)\b', plain))
+                    state['status_turn'] = bool(re.search(r'^(what|why|how|is|are|can you (?:tell|check)|do we|show|review)\b', plain))
+            # Rejection revokes old acceptance, but never authorizes implementation in a review-only turn.
+            if state.get('task_id') and re.search(r'\b(not done|not finished|not acceptable|does not meet|you dropped|still unfinished|complete slop|botched template)\b', plain):
+                task = read_json(task_path(Path(state['root']), state['task_id']))
+                if task and task.get('status') == 'active' and task.get('mode') == 'execute':
+                    for obligation in task['obligations']:
+                        event(Path(state['root']), state['task_id'], 'reopen', obligation['id'], reason='User rejected outcome: ' + prompt[:1000])
+                    state['status_turn'] = read_only
         if state:
             atomic_json(path, state)
             return context(name, packet(state, sid))
@@ -145,6 +165,7 @@ def handle(payload):
         return {}
     if name == 'PreToolUse':
         tool = payload.get('tool_name', '')
+        tool = tool.rsplit('__', 1)[-1].rsplit('.', 1)[-1]
         if tool == 'Agent' or tool.endswith('spawn_agent'):
             if state.get('is_child'):
                 return {'hookSpecificOutput': {'hookEventName': name, 'permissionDecision': 'deny',
@@ -179,9 +200,9 @@ def handle(payload):
             if errors:
                 return {'hookSpecificOutput': {'hookEventName': name, 'permissionDecision': 'deny',
                                               'permissionDecisionReason': 'Repair canonical plan prerequisites: ' + '; '.join(errors[:3])}}
-        if task_id and tool == 'Bash':
+        if task_id and tool in ('Bash', 'exec_command'):
             raw = payload.get('tool_input', {})
-            command = raw.get('command', '') if isinstance(raw, dict) else ''
+            command = raw.get('command', raw.get('cmd', '')) if isinstance(raw, dict) else ''
             if re.search(r'\b(?:git\s+push|deploy|systemctl\s+(?:restart|stop)|rm\s+-rf)\b', command):
                 from mega_decision import read_records, replay, ACCEPTED
                 records, errors = read_records(root/'decisions.jsonl')
@@ -208,19 +229,27 @@ def handle(payload):
         return {}
     if name != 'Stop':
         return {}
+    first_current_stop = state.get('stop_verified_revision') != handler_revision()
+    state['stop_verified_revision'] = handler_revision()
+    atomic_json(path, state)
     if state.get('paused') or state.get('status_turn') or state.get('mode') != 'execute':
+        append_jsonl(root / 'hook-audit.jsonl', {'event': name, 'session_id': sid, 'task_id': task_id,
+                     'verdict': 'bypassed', 'reason': 'paused' if state.get('paused') else 'status_or_nonexecute'})
         return {}
     if state.get('pending') or not task_id:
         result = {'verdict': 'invalid', 'reason': 'register the goal and canonical plan before execution', 'unmet': ['registration']}
     else:
-        result = evaluate(root, task_id)
+        result = evaluate(root, task_id, require_outcomes=True)
+        if result['verdict'] == 'complete' and first_current_stop:
+            result = {'verdict': 'continue', 'reason': 'native Stop invocation is now observed; rerun the strict manual final gate with --task before finishing', 'unmet': ['runtime-stop-readback']}
         from mega_agents import open_agents
-        children = [c for c in open_agents(root, task_id) if c.get('parent_session_id') == sid]
+        children = open_agents(root, task_id)
         if children:
             ids = [c.get('agent_id', c.get('id')) for c in children]
             result = {'verdict': 'continue', 'reason': 'collect remaining child results, then call native close_agent for these owned IDs and record the receipts: ' + ', '.join(ids), 'unmet': ['child-cleanup']}
     append_jsonl(root / 'hook-audit.jsonl', {'event': name, 'session_id': sid,
-                 'task_id': task_id, 'verdict': result['verdict'], 'reason': result['reason']})
+                 'task_id': task_id, 'verdict': result['verdict'], 'reason': result['reason'],
+                 'outcome_failures': result.get('outcome_failures', {}), 'unmet': result['unmet']})
     if task_id:
         event(root, task_id, 'stop_decision', verdict=result['verdict'], reason=result['reason'], unmet=result['unmet'])
     if result['verdict'] in ('complete', 'blocked', 'paused'):
@@ -245,9 +274,10 @@ def handle(payload):
 
 def packet(state, sid):
     cmd = f'{sys.executable} {SCRIPT_DIR / "mega_task.py"} --root {state["root"]}'
+    turn_note = 'This turn is review/status-only; do not implement. Original obligations remain open. ' if state.get('status_turn') else ''
     if state.get('pending'):
-        return f'Megaskill {state["mode"]} task pending. Goal: {state["goal"]}. Write/validate the canonical plan, then register: {cmd} register --id TASK_ID --plan PLAN.md --goal "requested outcome" --mode {state["mode"]} --session {sid}. If already registered, repair binding with {cmd} bind --id TASK_ID --session {sid}. The lifecycle binding is at {binding_root()}; do not change MEGA_BINDINGS_DIR to a different location from the installed hooks. Registration must precede implementation. Properly quote shell paths. Use verified test/readback proofs and explicit done events for each obligation.'
-    return f'Megaskill goal: {state["goal"]}. Task {state.get("task_id")}; mode {state["mode"]}. Use {cmd} show/evaluate --id {state.get("task_id")}. Prove each obligation with prove --kind test/readback --artifact PATH -- COMMAND, then done --proof EVENT_ID. Make delegated engineering decisions and record them with mega_decision.py; do not replace whole-goal completion with an ADR checkpoint. Close owned agents after collecting results. A release blocker only blocks its affected obligations.'
+        return f'Megaskill {state["mode"]} task pending. Goal: {state["goal"]}. Write/validate the canonical plan, then register: {cmd} register --id TASK_ID --plan PLAN.md --goal "requested outcome" --mode {state["mode"]} --session {sid} --acceptance ACCEPTANCE.json. Pin actual text/JSON/review outcome assertions for every obligation, not file-existence proxies. If registered, repair binding with {cmd} bind --id TASK_ID --session {sid}. Binding directory: {binding_root()}; do not override it. Registration precedes implementation. Link current test/readback proof and explicit done events.'
+    return f'{turn_note}Megaskill goal: {state["goal"]}. Task {state.get("task_id")}; mode {state["mode"]}. Use {cmd} show/evaluate --id {state.get("task_id")}. Missing acceptance: use acceptance --file ACCEPTANCE.json --authority USER_AUTHORITY --reason REASON, then refresh proof. Pin actual requested outcomes; qualitative work needs an independent review, not presence/keyword checks. Use runtime --id {state.get("task_id")} --session {sid} before claiming hook coverage. Prove each obligation with prove --kind test/readback --artifact PATH -- COMMAND, then done --proof EVENT_ID. Make delegated engineering decisions and record them with mega_decision.py. Close owned agents after collecting results, including previous owners of this same task. A release blocker only blocks its affected obligations.'
 
 
 def main():

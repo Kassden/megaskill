@@ -173,11 +173,21 @@ def cmd_final_gate(args: argparse.Namespace) -> int:
             print('Mega final gate failed: requested plan does not match task contract.')
             return 1
         parent = contract.get('session_id')
-        children = [c for c in open_agents(root, args.task) if c.get('parent_session_id') == parent]
+        children = open_agents(root, args.task)
         if children:
             print('Mega final gate failed: owned children still require native closure receipts.')
             return 1
-        result = evaluate(Path(args.root), args.task)
+        result = evaluate(Path(args.root), args.task, require_outcomes=True)
+        if args.verdict == 'done':
+            if not parent:
+                print('Mega final gate failed: task has no owning runtime session.')
+                return 1
+            from mega_outcomes import runtime_status
+            runtime = runtime_status(parent, task_id=args.task, root=root)
+            if not runtime['verified']:
+                print(json.dumps({'verdict': 'unverified', 'runtime': runtime}, sort_keys=True))
+                print('Mega final gate failed: actual session hook invocation is unverified.')
+                return 1
         valid = result['verdict'] == ('complete' if args.verdict == 'done' else 'blocked')
         print(json.dumps(result, sort_keys=True))
         print('Mega final gate passed.' if valid else 'Mega final gate failed.')
@@ -225,6 +235,9 @@ def cmd_final_gate(args: argparse.Namespace) -> int:
         print("Mega final gate failed: done verdict has incomplete plan subphases.")
         for item in incomplete:
             print(f"- {item}")
+        return 1
+    if args.verdict == 'done':
+        print('Mega final gate failed: state-only history cannot certify requested outcomes; supply --task TASK --root ROOT.')
         return 1
     if args.verdict == "blocked" and not blockers:
         print("Mega final gate failed: blocked verdict requires a blocker event in the state ledger.")

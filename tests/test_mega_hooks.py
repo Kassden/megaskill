@@ -22,7 +22,8 @@ class HookTests(unittest.TestCase):
         return handle(dict(session_id='session-a',hook_event_name=name,cwd=str(self.cwd),**args))
     def activate(self):
         self.call('UserPromptSubmit',prompt='$megaskill implement the whole plan')
-        register(self.root,'test',self.plan,'complete the whole goal',session='session-a')
+        register(self.root,'test',self.plan,'complete the whole goal',session='session-a',
+                 acceptance={'1.1':[{'kind':'text','description':'requested exact output','path':str(self.file),'equals':'ok'}]})
     def test_incomplete_stop_continues_and_proved_stop_allows(self):
         self.activate();self.assertEqual(self.call('Stop')['decision'],'block')
         ids=[event(self.root,'test','proof','1.1',proof_kind=k,exit_code=0,artifacts={str(self.file):digest(self.file)})['event_id'] for k in ('test','readback')]
