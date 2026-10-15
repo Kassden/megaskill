@@ -156,7 +156,7 @@ def render_dashboard(plan_path: Path, state_path: Path, evidence_path: Path, gen
             contract = json.loads(contract_path.read_text())
             if Path(contract.get('plan','')).resolve() != plan_path.resolve():
                 continue
-            result = evaluate(state_path.parent, contract['task_id'])
+            result = evaluate(state_path.parent, contract['task_id'], require_outcomes=True)
             row = (contract['task_id'], result['verdict'], ', '.join(result['unmet']), result['reason'])
             runtime_rows.append('<tr>' + ''.join(f'<td>{html.escape(str(value))}</td>' for value in row) + '</tr>')
         except (ValueError, KeyError, TypeError, OSError):
