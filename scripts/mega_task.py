@@ -15,7 +15,7 @@ def task_path(root, task_id):
     return Path(root) / 'tasks' / (safe_id(task_id) + '.json')
 
 
-def register(root, task_id, plan, goal, mode='execute', session=None, obligations=None, plan_validator=None):
+def register(root, task_id, plan, goal, mode='execute', session=None, obligations=None, plan_validator=None, acceptance=None, replace_authority=None):
     """API fixtures may omit plan_validator; the public CLI always supplies it."""
     root, plan = Path(root).resolve(), Path(plan).resolve()
     if not plan.is_file():
@@ -33,23 +33,47 @@ def register(root, task_id, plan, goal, mode='execute', session=None, obligation
     contract = {'schema_version': 1, 'task_id': safe_id(task_id), 'root': str(root),
                 'plan': str(plan), 'plan_hash': digest(plan), 'goal': goal, 'mode': mode,
                 'status': 'active', 'obligations': obligations, 'session_id': session}
+    if acceptance is not None:
+        contract['acceptance'] = acceptance
     validate_contract(contract, root, task_id)
+    if session:
+        check_binding_replacement(root, task_id, session, replace_authority)
     with locked(path.with_suffix('.lock')):
         if path.exists():
             raise ValueError('task already exists; reconcile explicitly')
         atomic_json(path, contract)
     if session:
-        bind(root, task_id, session)
+        bind(root, task_id, session, replace_authority)
     return contract
 
 
-def bind(root, task_id, session):
+def check_binding_replacement(root, task_id, session, authority=None):
+    previous = read_json(binding_root() / (safe_id(session) + '.json'), {})
+    if not isinstance(previous, dict): raise ValueError('invalid previous session binding')
+    old_id = previous.get('task_id')
+    if old_id and (old_id != task_id or previous.get('root') != str(Path(root).resolve())):
+        result = evaluate(Path(previous['root']), old_id, require_outcomes=True)
+        if result['verdict'] != 'complete' and not (isinstance(authority, str) and authority.strip()):
+            raise ValueError('cannot replace unfinished original goal; provide explicit --replace-authority from the user')
+    return previous
+
+
+def bind(root, task_id, session, replace_authority=None):
     task = load_contract(root, task_id)
     path = binding_root() / (safe_id(session) + '.json')
     with locked(path.with_suffix('.lock')):
+        previous = check_binding_replacement(root, task_id, session, replace_authority)
+        contract_path = task_path(root, task_id)
+        with locked(contract_path.with_suffix('.lock')):
+            task = load_contract(root, task_id)
+            task['executor_sessions'] = sorted(set(task.get('executor_sessions', [])) | {session})
+            task['session_id'] = session
+            atomic_json(contract_path, task)
         atomic_json(path, {'root': str(Path(root).resolve()), 'task_id': task_id,
                           'session_id': session, 'goal': task['goal'], 'mode': task['mode'],
-                          'status_turn': False, 'pending': False, 'stall_count': 0})
+                          'status_turn': False, 'pending': False, 'stall_count': 0,
+                          'replaced_goal': previous.get('goal') if replace_authority else None,
+                          'replacement_authority': replace_authority})
 
 
 def event(root, task_id, kind, oid='', **fields):
@@ -90,9 +114,16 @@ def main():
     r = sub.add_parser('register'); r.add_argument('--id', required=True); r.add_argument('--plan', required=True)
     r.add_argument('--goal', required=True); r.add_argument('--session'); r.add_argument('--mode', choices=['execute', 'plan', 'review', 'monitor'], default='execute')
     r.add_argument('--obligations', help='JSON file containing explicit proof policies/dependencies')
+    r.add_argument('--acceptance', type=Path, help='JSON mapping each obligation to pinned outcome assertions; required for execution')
+    r.add_argument('--replace-authority', help='explicit user authority to replace an unfinished bound goal')
+    ac = sub.add_parser('acceptance'); ac.add_argument('--id', required=True)
+    ac.add_argument('--file', type=Path, required=True); ac.add_argument('--authority', required=True); ac.add_argument('--reason', required=True)
+    rt = sub.add_parser('runtime'); rt.add_argument('--id', required=True); rt.add_argument('--session')
     for name in ('show', 'evaluate', 'bind', 'pause', 'cancel', 'resume', 'reconcile'):
         c = sub.add_parser(name); c.add_argument('--id', required=True)
-        if name == 'bind': c.add_argument('--session', required=True)
+        if name == 'bind':
+            c.add_argument('--session', required=True)
+            c.add_argument('--replace-authority')
         if name in ('pause', 'cancel', 'resume', 'reconcile'): c.add_argument('--reason', required=True)
         if name == 'reconcile': c.add_argument('--authority', required=True, help='user authority for changed acceptance')
     proof = sub.add_parser('prove'); proof.add_argument('--id', required=True); proof.add_argument('--obligation', required=True)
@@ -113,11 +144,37 @@ def main():
             obligations = read_json(Path(a.obligations)) if a.obligations else None
             if a.obligations and not isinstance(obligations, list):
                 raise ValueError('explicit obligations must be a nonempty list')
-            out = register(root, a.id, a.plan, a.goal, a.mode, a.session, obligations, plan_validator=validate)
+            if a.mode == 'execute' and not a.acceptance:
+                # Validate the plan first, retaining useful prerequisite diagnostics.
+                errors = validate(Path(a.plan).read_text())
+                if errors: raise ValueError('invalid plan: ' + '; '.join(errors))
+                raise ValueError('execute registration requires --acceptance FILE with actual outcome assertions')
+            if a.acceptance and not isinstance(read_json(a.acceptance), dict):
+                raise ValueError('acceptance file must contain an outcome assertion object')
+            out = register(root, a.id, a.plan, a.goal, a.mode, a.session, obligations, plan_validator=validate,
+                           acceptance=read_json(a.acceptance) if a.acceptance else None, replace_authority=a.replace_authority)
+        elif a.cmd == 'runtime':
+            from mega_outcomes import runtime_status
+            task = load_contract(root, a.id, check_plan=False)
+            out = runtime_status(a.session or task.get('session_id') or '', task_id=a.id, root=root)
+            print(json.dumps(out)); return 0 if out['verified'] else 1
+        elif a.cmd == 'acceptance':
+            from mega_outcomes import validate_acceptance
+            if not a.authority.strip() or not a.reason.strip(): raise ValueError('acceptance revision requires authority and reason')
+            path = task_path(root, a.id)
+            with locked(path.with_suffix('.lock')):
+                task = load_contract(root, a.id, executable=True)
+                task['acceptance'] = validate_acceptance(read_json(a.file), [o['id'] for o in task['obligations']])
+                task['acceptance_authority'] = a.authority; task['acceptance_reason'] = a.reason
+                # Invalidate before changing policy; a crash cannot carry old completion forward.
+                for obligation in task['obligations']:
+                    event(root, a.id, 'edit', obligation['id'], reason='outcome acceptance revision: ' + a.reason)
+                atomic_json(path, task)
+            out = {'acceptance_updated': a.id, 'requires_fresh_proof': True}
         elif a.cmd == 'bind':
-            bind(root, a.id, a.session); out = {'bound': a.session}
+            bind(root, a.id, a.session, a.replace_authority); out = {'bound': a.session}
         elif a.cmd == 'evaluate':
-            out = evaluate(root, a.id); print(json.dumps(out)); return 0 if out['verdict'] in ('complete', 'blocked', 'paused') else 1
+            out = evaluate(root, a.id, require_outcomes=True); print(json.dumps(out)); return 0 if out['verdict'] in ('complete', 'blocked', 'paused') else 1
         elif a.cmd == 'show': out = read_json(task_path(root, a.id))
         elif a.cmd in ('pause', 'cancel', 'resume', 'reconcile'):
             path = task_path(root, a.id)
@@ -130,6 +187,8 @@ def main():
                     if not ids or len(ids) != len(set(ids)): raise ValueError('invalid revised plan')
                     out['plan_hash'] = digest(out['plan']); out['authority'] = a.authority
                     out['obligations'] = [{'id': oid, 'proof_kinds': ['test', 'readback'], 'depends_on': []} for oid in ids]
+                    if 'acceptance' in out and set(out['acceptance']) != set(ids):
+                        del out['acceptance']
                 else: out['status'] = {'pause':'paused', 'cancel':'cancelled', 'resume':'active'}[a.cmd]
                 out['lifecycle_reason'] = a.reason; atomic_json(path, out)
         elif a.cmd == 'prove':

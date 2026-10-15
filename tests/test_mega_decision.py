@@ -320,9 +320,13 @@ class MegaDecisionTests(unittest.TestCase):
     def test_registered_task_cli_to_promoted_adr_readback(self):
         from test_plan_check import valid_plan
         self.plan.write_text(valid_plan())
+        import re
+        acceptance = self.cwd/'acceptance.json'
+        acceptance.write_text(json.dumps({oid:[dict(kind='text',description='exact fixture plan',path=str(self.plan),equals=self.plan.read_text())]
+                  for oid in re.findall(r'^###\s+Subphase\s+(\d+(?:\.\d+)+):',self.plan.read_text(),re.M)}))
         registered = subprocess.run([sys.executable, str(SCRIPT.with_name("mega_task.py")),
                         "--root", str(self.cwd / ".mega"), "register", "--id", "task-one",
-                        "--plan", str(self.plan), "--goal", "Review navigation choice"],
+                        "--plan", str(self.plan), "--goal", "Review navigation choice", "--acceptance", str(acceptance)],
                         cwd=self.cwd, capture_output=True, text=True, timeout=15)
         self.assertEqual(registered.returncode, 0, registered.stdout + registered.stderr)
         contract = json.loads(registered.stdout)

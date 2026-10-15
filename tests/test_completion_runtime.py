@@ -263,6 +263,14 @@ class CompletionRuntimeTests(unittest.TestCase):
         fixture = Path(__file__).parent / 'fixtures/root-cause-gate-good.md'
         self.assertEqual(validate(fixture.read_text()), [])
         r = self.cli('register', '--id', 'valid', '--plan', str(fixture), '--goal', 'goal')
+        self.assertEqual(r.returncode, 2, r.stderr)
+        self.assertIn('--acceptance', r.stderr)
+        import re
+        acceptance = self.cwd/'acceptance.json'
+        atomic_json(acceptance, {oid:[dict(kind='text', description='exact fixture bytes',
+                    path=str(self.artifact), equals='expected')]
+                    for oid in re.findall(r'^###\s+Subphase\s+(\d+(?:\.\d+)+):', fixture.read_text(), re.M)})
+        r = self.cli('register', '--id', 'valid', '--plan', str(fixture), '--goal', 'goal', '--acceptance', str(acceptance))
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(read_json(self.root / 'tasks/valid.json')['schema_version'], 1)
         policies = self.cwd / 'policies.json'

@@ -54,6 +54,9 @@ def validate_contract(task, root, task_id):
         visited.add(node)
     for node in graph:
         visit(node, set())
+    if 'acceptance' in task:
+        from mega_outcomes import validate_acceptance
+        validate_acceptance(task['acceptance'], graph)
     return task
 
 
@@ -89,7 +92,7 @@ def validate_blocker(fields):
         raise ValueError('install/setup is executable work, not an external resolution')
 
 
-def evaluate(root, task_id):
+def evaluate(root, task_id, require_outcomes=False):
     root = Path(root).resolve()
     safe_id(task_id)
     try:
@@ -124,6 +127,7 @@ def evaluate(root, task_id):
         seen.add(eid)
     scoped = [e for e in events if e.get('task_id') == task_id and e.get('plan_hash') == task['plan_hash']]
     unmet, blockers, executable = [], [], []
+    outcome_failures = {}
     complete = set()
     for obligation in obligations:
         oid = obligation['id']
@@ -146,6 +150,12 @@ def evaluate(root, task_id):
                 fresh = False
             valid = valid and fresh
         valid = valid and all(any(p.get('proof_kind') == kind for p in evidence) for kind in obligation['proof_kinds'])
+        if require_outcomes or task.get('acceptance'):
+            from mega_outcomes import outcome_errors
+            failures = outcome_errors(task, oid, evidence)
+            if failures:
+                valid = False
+                outcome_failures[oid] = failures
         if valid:
             complete.add(oid)
         else:
@@ -173,5 +183,9 @@ def evaluate(root, task_id):
         verdict, reason = 'blocked', 'remaining obligations are externally blocked or depend on blocked work'
     else:
         verdict, reason = 'invalid', 'unmet dependencies without an executable obligation or active blocker'
+    if outcome_failures and executable:
+        reason += '; ' + outcome_failures.get(executable[0], ['refresh current proof'])[0]
     return {'verdict': verdict, 'reason': reason, 'unmet': unmet, 'executable': executable,
+            'outcome_failures': outcome_failures,
+            'assurance': 'outcome-checked' if task.get('acceptance') else 'artifact-only',
             'blocked': blockers, 'task_id': task_id, 'plan_hash': task['plan_hash']}
