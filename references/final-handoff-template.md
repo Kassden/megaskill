@@ -45,6 +45,6 @@ Verdict rules:
 Whole-plan rule:
 
 - If the user asked to execute the whole plan, finish all phases, or not drop the plan, `not done` is not a valid final answer unless the user explicitly asked for a progress report.
-- Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` before a done handoff.
-- Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict blocked` before a blocked handoff.
+- Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --task TASK --root .mega --verdict done` before an execution done handoff. A state-only history cannot certify completion.
+- Run the same task-scoped gate with `--verdict blocked` for an external blocker; retain per-obligation evidence and continue independent work.
 - If the gate finds incomplete subphases and no blocker, continue instead of handing off.

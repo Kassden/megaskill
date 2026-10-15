@@ -14,6 +14,8 @@ Use this shape for lower-level agent plans.
 ## Runtime Contract And Decision Record Policy
 - Task mode: plan/review/execute/monitor; execution must be authorized.
 - Exact obligation IDs and relevant proof artifacts:
+- Pinned actual-outcome assertions for every obligation (ACCEPTANCE.json), including independent review for qualitative criteria:
+- Actual session prompt/tool/Stop invocation proof and unsupported-host fallback:
 - Material decisions requiring alternatives/self-critique and ADR promotion:
 - Delegated roles, allowed edit surfaces, and native close/readback requirements:
 
