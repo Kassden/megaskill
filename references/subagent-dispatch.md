@@ -1,5 +1,17 @@
 # Bounded subagent dispatch
 
+Use the actual user assignment and native permissions to scope delegation.
+Roles describe responsibilities, not permission ceilings. Give reviewers concrete
+criteria for detecting drift and let the parent resolve findings. Do not infer a
+session-wide restriction from role names, stored modes or quoted examples.
+Supply bounded edit paths and preserve explicit user limits in the assignment.
+
+Native child events may share the parent session ID. The adapter uses the
+observed SubagentStart turn/child pair to route prompt/tool events to the child
+binding for observation only. The adapter injects no handoff permission packet.
+A child checkpoint never completes the whole parent goal. Collect concrete results,
+then close with the actual native receipt.
+
 This implements runtime plan subphase 2.2. Select responsibilities on demand:
 thinker explores assumptions; planner defines work; executor implements; tester
 exercises behavior; verifier checks outcomes independently; orchestrator coordinates
