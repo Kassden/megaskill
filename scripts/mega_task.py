@@ -69,11 +69,36 @@ def bind(root, task_id, session, replace_authority=None):
             task['executor_sessions'] = sorted(set(task.get('executor_sessions', [])) | {session})
             task['session_id'] = session
             atomic_json(contract_path, task)
-        atomic_json(path, {'root': str(Path(root).resolve()), 'task_id': task_id,
+        binding = {'root': str(Path(root).resolve()), 'task_id': task_id,
                           'session_id': session, 'goal': task['goal'], 'mode': task['mode'],
                           'status_turn': False, 'pending': False, 'stall_count': 0,
                           'replaced_goal': previous.get('goal') if replace_authority else None,
-                          'replacement_authority': replace_authority})
+                          'replacement_authority': replace_authority}
+        # Rebinding is not a user resume command. Preserve scheduling metadata;
+        # these fields are never tool permissions.
+        for key in ('authority', 'paused', 'status_turn', 'is_child', 'parent_session_id',
+                    'authority_conflict', 'conflict_notified', 'child_turns', 'completion_control'):
+            if key in previous:
+                binding[key] = previous[key]
+        atomic_json(path, binding)
+
+
+def authorize(root, task_id, authority, turn_id=None):
+    """Record durable execution intent. Does not grant current-turn permission."""
+    if not isinstance(authority, str) or not authority.strip():
+        raise ValueError('execution intent requires the explicit user request')
+    path = task_path(root, task_id)
+    with locked(path.with_suffix('.lock')):
+        task = load_contract(root, task_id)
+        record = dict(kind='execution_intent', task_id=task_id,
+                      plan_hash=task['plan_hash'], turn_id=turn_id,
+                      authority_sha256=__import__('hashlib').sha256(authority.encode()).hexdigest(),
+                      previous_mode=task['mode'], mode='execute')
+        append_jsonl(Path(root) / 'tasks' / (task_id + '.authority.jsonl'), record)
+        task['mode'] = 'execute'
+        task['execution_authority'] = record
+        atomic_json(path, task)
+    return {'task_id': task_id, 'mode': 'execute', 'turn_permission_granted': False}
 
 
 def event(root, task_id, kind, oid='', **fields):
@@ -119,6 +144,8 @@ def main():
     ac = sub.add_parser('acceptance'); ac.add_argument('--id', required=True)
     ac.add_argument('--file', type=Path, required=True); ac.add_argument('--authority', required=True); ac.add_argument('--reason', required=True)
     rt = sub.add_parser('runtime'); rt.add_argument('--id', required=True); rt.add_argument('--session')
+    au = sub.add_parser('authorize'); au.add_argument('--id', required=True)
+    au.add_argument('--authority', required=True); au.add_argument('--turn-id')
     for name in ('show', 'evaluate', 'bind', 'pause', 'cancel', 'resume', 'reconcile'):
         c = sub.add_parser(name); c.add_argument('--id', required=True)
         if name == 'bind':
@@ -153,6 +180,8 @@ def main():
                 raise ValueError('acceptance file must contain an outcome assertion object')
             out = register(root, a.id, a.plan, a.goal, a.mode, a.session, obligations, plan_validator=validate,
                            acceptance=read_json(a.acceptance) if a.acceptance else None, replace_authority=a.replace_authority)
+        elif a.cmd == 'authorize':
+            out = authorize(root, a.id, a.authority, a.turn_id)
         elif a.cmd == 'runtime':
             from mega_outcomes import runtime_status
             task = load_contract(root, a.id, check_plan=False)

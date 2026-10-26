@@ -53,6 +53,26 @@ class CompletionRuntimeTests(unittest.TestCase):
         event(self.root, 'one', 'blocked', '1.1', **self.blocker())
         self.assertEqual(evaluate(self.root, 'one')['verdict'], 'blocked')
 
+    def test_durable_execution_intent_does_not_rewrite_plan_or_acceptance(self):
+        before=self.rewrite_contract(mode='plan',status='paused')
+        result=self.cli('authorize','--id','one','--authority','execute','--turn-id','user-turn')
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertFalse(json.loads(result.stdout)['turn_permission_granted'])
+        after=read_json(self.root/'tasks/one.json')
+        self.assertEqual(after['mode'],'execute'); self.assertEqual(after['status'],'paused')
+        self.assertEqual(after['plan_hash'],before['plan_hash'])
+        self.assertEqual(after.get('acceptance'),before.get('acceptance'))
+
+    def test_rebind_preserves_completion_pause_until_user_resumes(self):
+        from mega_task import bind
+        with patch.dict(os.environ,MEGA_BINDINGS_DIR=str(self.cwd/'bindings')):
+            bind(self.root,'one','parent')
+            path=self.cwd/'bindings/parent.json'; state=read_json(path)
+            state['completion_control']={'paused':True,'reason':'user-review'}
+            atomic_json(path,state)
+            bind(self.root,'one','parent')
+            self.assertEqual(read_json(path)['completion_control'],state['completion_control'])
+
     def test_stale_artifact_and_later_failure(self):
         self.prove('1.1'); self.prove('1.10')
         self.assertEqual(evaluate(self.root,'one')['verdict'], 'complete')
