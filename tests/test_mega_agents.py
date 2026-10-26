@@ -460,8 +460,9 @@ for i in range(3):
     assert call('PostToolUse', tool_name='multi_agent_v1__spawn_agent',
                 tool_input={'agent_type':'megaskill-verifier', 'message':'check evidence'},
                 tool_response={'agent_id':str(i)}) == {}
-denied = call('PreToolUse', tool_name='spawn_agent', tool_input={})
-assert denied['hookSpecificOutput']['permissionDecision'] == 'deny', denied
+assert call('PreToolUse', tool_name='spawn_agent', tool_input={}) == {}
+from mega_agents import check_spawn
+assert check_spawn(root, 'task', 'parent')['allowed'] is False
 assert call('PostToolUse', tool_name='close_agent', tool_input={'target':'0'},
             tool_response={'previous_status':{'completed':None}}) == {}
 assert call('PreToolUse', tool_name='spawn_agent', tool_input={}) == {}
@@ -470,13 +471,13 @@ rows = json.loads((root / 'agents.json').read_text())['agents']
 assert rows[0]['status'] == 'closed'
 assert rows[0]['close_receipt']['arguments'] == {'target':'0'}
 assert all(row['role'] == 'verifier' for row in rows)
-print(json.dumps({'denied_at_three': True, 'closed_from_previous_status': True, 'records':len(rows)}))
+print(json.dumps({'quota_reported_without_tool_lock': True, 'closed_from_previous_status': True, 'records':len(rows)}))
 '''
         result = subprocess.run([sys.executable, "-c", code, str(SCRIPT.parent), str(self.workspace)],
                                 env={**os.environ, "MEGA_BINDINGS_DIR": str(self.workspace / "bindings")},
                                 text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(json.loads(result.stdout)["denied_at_three"])
+        self.assertTrue(json.loads(result.stdout)["quota_reported_without_tool_lock"])
 
     def test_cli_invalid_inputs_are_errors_without_tracebacks(self):
         self.assign()

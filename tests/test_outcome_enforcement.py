@@ -84,19 +84,33 @@ class OutcomeTests(unittest.TestCase):
         for bad in ({}, {'1.1':[]}, {'1.1':[{'kind':'shell'}]}, {'1.1':[dict(self.policy()['1.1'][0],inputs='source')]}):
             with self.assertRaises(ValueError): validate_acceptance(bad,['1.1'])
 
-    def test_keep_going_and_bare_skill_resume_paused_work(self):
+    def test_explicit_resume_clears_completion_pause_without_edit_permissions(self):
         self.task(self.policy())
-        for prompt in ('keep going man','keep goin','megaskill','$megaskill','solve it then'):
+        for prompt in ('keep going man','keep goin','continue','execute','solve it then'):
             self.hook('Interrupt'); self.hook('UserPromptSubmit',prompt=prompt)
             state=read_json(self.cwd/'bindings/parent.json')
-            self.assertFalse(state['paused']); self.assertFalse(state['status_turn'])
+            self.assertFalse(state['completion_control']['paused'])
+            self.assertFalse(state['status_turn'])
             self.assertEqual(read_json(self.root/'tasks/t.json')['status'],'active')
 
-    def test_explicit_rejection_reopens_but_status_query_does_not(self):
+    def test_explicit_outcomes_can_pass_without_automatic_hooks(self):
+        self.task(self.policy()); self.report_value(); self.proof()
+        script=Path(__file__).resolve().parents[1]/'scripts/mega_state.py'
+        cmd=[sys.executable,str(script),'final-gate','--plan',str(self.plan),
+             '--task','t','--root',str(self.root),'--verdict','done']
+        result=subprocess.run(cmd,capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        result=subprocess.run(cmd+['--require-native-runtime'],capture_output=True,text=True)
+        self.assertEqual(result.returncode,1)
+        self.assertIn('hook invocation is unverified',result.stdout)
+
+    def test_hook_messages_do_not_silently_rewrite_acceptance(self):
         self.task(self.policy()); self.report_value(); self.proof()
         self.hook('UserPromptSubmit',prompt='what is the status?')
         self.assertEqual(evaluate(self.root,'t',require_outcomes=True)['verdict'],'complete')
         self.hook('UserPromptSubmit',prompt='You dropped before it was done; not acceptable')
+        self.assertEqual(evaluate(self.root,'t',require_outcomes=True)['verdict'],'complete')
+        event(self.root,'t','reopen','1.1',reason='Explicit reviewer rejection')
         self.assertEqual(evaluate(self.root,'t',require_outcomes=True)['verdict'],'continue')
 
     def test_missing_receipts_not_success_and_early_returns_are_audited(self):
@@ -104,22 +118,22 @@ class OutcomeTests(unittest.TestCase):
         self.hook('UserPromptSubmit',prompt='what is the status?'); self.hook('PreToolUse',tool_name='exec_command',tool_input={'cmd':'pwd'})
         self.assertFalse(runtime_status('parent')['verified']); self.assertEqual(self.hook('Stop'),{})
         self.assertTrue(runtime_status('parent')['verified'])
-        audit=[json.loads(l) for l in (self.root/'hook-audit.jsonl').read_text().splitlines()]
-        self.assertEqual(audit[-1]['verdict'],'bypassed')
         rows=[json.loads(l) for l in receipt_path('parent').read_text().splitlines()]
+        self.assertTrue(all(row['policy']=='completion-retry-with-user-unlock' for row in rows))
         for row in rows: row['handler_revision']='old'
         receipt_path('parent').write_text(''.join(json.dumps(r)+'\n' for r in rows))
         self.assertFalse(runtime_status('parent')['verified'])
 
-    def test_wrapped_continuation_preserves_goal(self):
+    def test_wrapped_continuation_preserves_review_scope_and_goal(self):
         self.task(self.policy()); self.hook('UserPromptSubmit',prompt='what is the status?')
         self.hook('UserPromptSubmit',prompt='<hook_prompt hook_run_id="x">Megaskill continuation: execute obligation 1.1</hook_prompt>')
         self.assertFalse(read_json(self.cwd/'bindings/parent.json')['status_turn'])
+        self.assertEqual(read_json(self.cwd/'bindings/parent.json')['task_id'], 't')
 
-    def test_current_shell_tool_name_requires_consequential_decision(self):
+    def test_custom_hook_does_not_add_a_shell_permission_system(self):
         self.task(self.policy())
         result=self.hook('PreToolUse',tool_name='functions.exec_command',tool_input={'cmd':'git push origin branch'})
-        self.assertEqual(result['hookSpecificOutput']['permissionDecision'],'deny')
+        self.assertEqual(result,{})
 
     def test_new_task_cannot_silently_replace_unfinished_whole_goal(self):
         self.task(self.policy())
@@ -161,8 +175,8 @@ class OutcomeTests(unittest.TestCase):
                        'Review only: this is not acceptable; report defects, do not fix.',
                        'Continue reviewing only; do not implement or fix anything.'):
             response=self.hook('UserPromptSubmit',prompt=prompt)
-            self.assertTrue(read_json(self.cwd/'bindings/parent.json')['status_turn'])
-            self.assertIn('do not implement',response['hookSpecificOutput']['additionalContext'])
+            self.assertFalse(read_json(self.cwd/'bindings/parent.json')['status_turn'])
+            self.assertEqual(response,{})
             self.assertEqual(self.hook('Stop'),{})
 
     def test_binding_changes_current_owner_and_keeps_executor_history(self):

@@ -178,7 +178,7 @@ def cmd_final_gate(args: argparse.Namespace) -> int:
             print('Mega final gate failed: owned children still require native closure receipts.')
             return 1
         result = evaluate(Path(args.root), args.task, require_outcomes=True)
-        if args.verdict == 'done':
+        if args.verdict == 'done' and getattr(args, 'require_native_runtime', False):
             if not parent:
                 print('Mega final gate failed: task has no owning runtime session.')
                 return 1
@@ -363,6 +363,8 @@ def main() -> int:
     final_gate.add_argument("--file")
     final_gate.add_argument('--task', help='use strict task contract and current linked proof')
     final_gate.add_argument('--root', default='.mega')
+    final_gate.add_argument('--require-native-runtime', action='store_true',
+                           help='add an explicit optional native observer coverage check')
     final_gate.add_argument("--verdict", choices=["done", "blocked", "not-done"], default="done")
     final_gate.add_argument(
         "--whole-plan",

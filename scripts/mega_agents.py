@@ -58,9 +58,9 @@ def _edits(value, root: Path) -> list[str]:
 
 def _receipt(value, agent_id: str) -> dict:
     # Bind the unmodified native result to the exact call, not a claimed closed flag.
-    if not isinstance(value, dict) or value.get("tool") not in ("close_agent", "multi_agent_v1__close_agent"):
+    if not isinstance(value, dict) or value.get("tool") not in ("close_agent", "multi_agent_v1__close_agent", "multi_agent_v1.close_agent", "multi_agent_v1close_agent"):
         raise ValueError("receipt must identify native close_agent")
-    if value.get("arguments") not in ({"id": agent_id}, {"target": agent_id}):
+    if value.get("arguments") not in ({"id": agent_id}, {"target": agent_id}, {"agent_path": agent_id}):
         raise ValueError("receipt arguments must identify this exact child")
     result = value.get("result")
     if not isinstance(result, dict) or set(result) not in ({"status"}, {"previous_status"}):
@@ -263,26 +263,37 @@ def cleanup(root: Path, task_id: str, parent_session_id: str) -> dict:
 
 
 def _observe_tool(payload: dict, root: Path, task_id: str, parent: str) -> dict:
-    tool = payload.get("tool_name")
-    if tool not in ("spawn_agent", "multi_agent_v1__spawn_agent", "close_agent", "multi_agent_v1__close_agent"):
+    raw_tool = payload.get("tool_name")
+    tool = raw_tool
+    tool = tool.rsplit('__', 1)[-1].rsplit('.', 1)[-1] if isinstance(tool, str) else tool
+    if tool in ('multi_agent_v1spawn_agent', 'multi_agent_v1close_agent'):
+        tool = tool.removeprefix('multi_agent_v1')
+    if tool not in ("spawn_agent", "close_agent"):
         return {"observed": False, "reason": "unrelated tool"}
     inputs, response = payload.get("tool_input"), payload.get("tool_response")
+    # Current native Codex emits tool_response as JSON text for these tools;
+    # fixtures and other hosts may already provide the decoded object.
+    if isinstance(response, str):
+        response = json.loads(response)
     if not isinstance(inputs, dict) or not isinstance(response, dict):
         raise ValueError("native tool_input and tool_response must be JSON objects")
     if tool.endswith("close_agent"):
-        if "target" in inputs and "id" in inputs:
-            raise ValueError("ambiguous close target/id arguments")
-        agent_id = _text(inputs.get("target", inputs.get("id")), "close target")
+        targets = [inputs[key] for key in ('target', 'id', 'agent_path') if key in inputs]
+        if len(targets) != 1:
+            raise ValueError("ambiguous or missing close target/id arguments")
+        agent_id = _text(targets[0], "close target")
         if not any(row["agent_id"] == agent_id for row in list_agents(root, task_id, parent)):
             return {"observed": False, "reason": "child not owned"}
-        proof = {"tool": tool, "arguments": inputs, "result": response}
+        proof = {"tool": raw_tool, "arguments": inputs, "result": response}
         row = close(root, task_id, parent, agent_id, proof)
         return {"observed": True, "agent": row}
-    if "agent_id" not in response:
+    if "agent_id" not in response and "agent_path" not in response:
         return {"observed": False, "reason": "spawn response has no child ID"}
     if any(key in response for key in ("error", "isError")):
         raise ValueError("spawn response contains error fields")
-    agent_id = _text(response["agent_id"], "spawned agent_id")
+    if 'agent_id' in response and 'agent_path' in response and response['agent_id'] != response['agent_path']:
+        raise ValueError('ambiguous spawned agent identity')
+    agent_id = _text(response.get('agent_id', response.get('agent_path')), "spawned agent_id")
     with _transaction(root) as data:
         existing = next((row for row in data["agents"] if row["agent_id"] == agent_id), None)
         if existing is not None:
@@ -307,7 +318,7 @@ def _observe_tool(payload: dict, root: Path, task_id: str, parent: str) -> dict:
                    role=role, objective=objective or "Confirm scope from native spawn instructions",
                    edit_set=[], verification="Parent must confirm verification criteria",
                    max_open=check["max_open"], status="assigned", scope_confirmed=False,
-                   spawn_receipt={"tool": tool, "arguments": inputs, "result": response})
+                   spawn_receipt={"tool": raw_tool, "arguments": inputs, "result": response})
         # PostToolUse cannot undo a native spawn. Keep raced/excess children visible for cleanup.
         if not check["allowed"]:
             row["policy_violation"] = check["reason"]
