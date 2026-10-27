@@ -1,0 +1,138 @@
+{
+  "description": "Generated synchronous Megaskill handlers; native trust required.",
+  "hooks": {
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event Interrupt",
+            "statusMessage": "Megaskill Interrupt",
+            "timeout": 3,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event PostCompact",
+            "statusMessage": "Megaskill PostCompact",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event PostToolUse",
+            "statusMessage": "Megaskill PostToolUse",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event PreCompact",
+            "statusMessage": "Megaskill PreCompact",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event PreToolUse",
+            "statusMessage": "Megaskill PreToolUse",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "additionalContextLimit": 1500,
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event SessionStart",
+            "statusMessage": "Megaskill SessionStart",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event Stop",
+            "statusMessage": "Megaskill Stop",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "additionalContextLimit": 1500,
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event SubagentStart",
+            "statusMessage": "Megaskill SubagentStart",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event SubagentStop",
+            "statusMessage": "Megaskill SubagentStop",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "additionalContextLimit": 1500,
+            "async": false,
+            "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/milkingthesun/.codex/skills/megaskill/scripts/mega_hooks.py --event UserPromptSubmit",
+            "statusMessage": "Megaskill UserPromptSubmit",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

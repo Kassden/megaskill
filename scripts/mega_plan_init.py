@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -24,10 +26,30 @@ def render(title: str, goal: str, phases: list[str]) -> str:
         "## Acceptance Criteria",
         "- [ ] <measurable proof of success>",
         "",
+        "## Runtime Contract",
+        "- Mode: <plan | review | execute | monitor>",
+        "- Task ID and session binding: <exact task/session IDs; register before execution>",
+        "- Proof artifacts: <relevant inputs/outputs for exact obligation IDs>",
+        "- Child cleanup: <owned agent IDs and native close receipts, or no delegation>",
+        "",
+        "## Decision Record Policy",
+        "- Required decisions: <architecture, UI/product, remediation, scope, consequential operations>",
+        "- Self-critique: <assumptions, alternatives, disconfirming test, reversibility>",
+        "- ADR promotion: <durable accepted decisions; ledger .mega/decisions.jsonl>",
+        "",
         "## Research",
         "- Built-in options: <inspect first>",
         "- Off-the-shelf options: <inspect if relevant>",
         "- Official / standards sources: <cite when relevant>",
+        "",
+        "## Root-Cause Baseline",
+        "- Trigger scope: <required for incidents, outages, live systems, telemetry gaps, data loss, recovery, or remediation; otherwise state not applicable>",
+        "- Minimum evidence inventory: <timeline, logs/journals, metrics/readbacks, recent changes, config/state, dependencies, user-observed facts, or not applicable>",
+        "- Hypothesis model: <proven, likely, possible, unlikely, disproven causes with evidence/counter-evidence, or not applicable>",
+        "- Missing-evidence policy: <unavailable evidence, why, source, destructiveness, uncertainty constraints, or not applicable>",
+        "- Mutation boundary: <read-only probes, reversible diagnostics, evidence-preserving collection, urgent restoration, or not applicable>",
+        "- Remediation mapping: <map each fix to a proven/hypothesized failure class; label generic hardening as risk reduction; or not applicable>",
+        "- Not-done conditions: <symptom-to-hardening jump, missing outage-window evidence, uncertainty omitted, or not applicable>",
         "",
         "## SOTA, Standards, And Best Practices",
         "- Current SOTA / prior art: <current best-known approaches for this capability>",
@@ -114,13 +136,43 @@ def main() -> int:
         help="comma-separated phase names, default: Discovery,Implementation,Verification",
     )
     parser.add_argument("--output", "-o", help="write plan to this path")
+    parser.add_argument(
+        "--dashboard",
+        nargs="?",
+        const="",
+        help="generate a dashboard HTML file, optionally at this path",
+    )
+    parser.add_argument("--open", action="store_true", help="open generated dashboard")
+    parser.add_argument("--no-open", action="store_true", help="do not open generated dashboard")
     args = parser.parse_args()
 
     content = render(args.title, args.goal, phase_names(args.phases))
     if args.output:
-        Path(args.output).write_text(content, encoding="utf-8")
+        output_path = Path(args.output)
+        output_path.write_text(content, encoding="utf-8")
     else:
+        output_path = None
         print(content, end="")
+    if args.dashboard is not None:
+        if output_path is None:
+            print("mega_plan_init --dashboard requires --output so the dashboard has a canonical plan file")
+            return 2
+        dashboard_path = Path(args.dashboard) if args.dashboard else Path(".mega/dashboards") / f"{output_path.stem}.html"
+        command = [
+            sys.executable,
+            str(Path(__file__).with_name("mega_plan_dashboard.py")),
+            str(output_path),
+            "--output",
+            str(dashboard_path),
+        ]
+        if args.no_open:
+            command.append("--no-open")
+        elif args.open:
+            command.append("--open")
+        else:
+            command.append("--interactive")
+        result = subprocess.run(command)
+        return result.returncode
     return 0
 
 

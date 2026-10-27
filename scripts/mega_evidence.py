@@ -36,6 +36,8 @@ def cmd_record(args: argparse.Namespace) -> int:
         "exit_code": args.exit_code,
         "note": args.note or "",
     }
+    if args.state_event_id:
+        record["state_event_id"] = args.state_event_id
     append_record(evidence_path(args.file), record)
     print(f"recorded evidence: {args.command} -> exit {args.exit_code}")
     return 0 if args.exit_code == 0 else int(args.exit_code)
@@ -55,6 +57,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         "exit_code": result.returncode,
         "note": args.note or "",
     }
+    if args.state_event_id:
+        record["state_event_id"] = args.state_event_id
     append_record(evidence_path(args.file), record)
     print(f"recorded evidence: {command} -> exit {result.returncode}")
     return result.returncode
@@ -98,12 +102,14 @@ def main() -> int:
     record.add_argument("--command", required=True)
     record.add_argument("--exit-code", type=int, required=True)
     record.add_argument("--note")
+    record.add_argument("--state-event-id")
     record.add_argument("--file")
     record.set_defaults(func=cmd_record)
 
     run = sub.add_parser("run", help="run a command and record its exit code")
     run.add_argument("--phase", required=True)
     run.add_argument("--note")
+    run.add_argument("--state-event-id")
     run.add_argument("--file")
     run.add_argument("command", nargs=argparse.REMAINDER)
     run.set_defaults(func=cmd_run)

@@ -39,11 +39,15 @@ Use it when an agent needs to write a decision-complete plan for lower-level age
 
 - Goal locking with acceptance criteria and out-of-scope boundaries.
 - Plan validation for SOTA/standards research, dependency/tooling preflight, deterministic real-user tests, fulfillment/readback proof, Armageddon mode, generality guardrails, phases, subphases, tests, success criteria, planned touch files, and checklist items.
+- Root-cause baseline enforcement for incidents, outages, production-adjacent remediation, telemetry gaps, data loss, and live-system recovery.
 - Regression guardrail prompts before file edits.
 - Branch isolation for Large/Systemic regression risk before implementation.
+- Ordered execution state recording for multi-phase or multi-agent work.
+- Generated HTML plan dashboards that show source-of-truth files, phases, damage radius, branch strategy, proof surfaces, evidence, blockers, and archive status.
 - Scope drift checks against changed, staged, and untracked files.
 - Atomic commit checks for staged changes.
-- Evidence recording for verification commands.
+- Evidence recording for verification commands, optionally linked to ordered state events.
+- A whole-plan final gate that rejects partial-progress handoffs when the user asked the agent to finish the entire plan.
 - Final handoff structure with a clear `done`, `blocked`, or `not done` verdict.
 
 ## Autonomy Rule
@@ -70,6 +74,22 @@ Armageddon mode is the adversarial pass: it tears apart UI, APIs, tools, data pa
 
 Before implementing, Megaskill checks whether the request is one instance of a broader pattern. Use the existing general mechanism when one exists. If no general mechanism exists and recurrence is likely, create the general mechanism first, then implement the specific request through it. Only choose a one-off when it is truly isolated, low-risk, and unlikely to recur.
 
+## Decision Awareness And ADRs
+
+Megaskill should make important agent choices inspectable, not just the final diff. The planned direction is a first-class decision record system for choices that a reviewer would reasonably ask about later: UI structure, architecture patterns, branch strategy, scope expansion, verification tradeoffs, one-off versus general mechanisms, and incident remediation paths.
+
+The target shape is a third ledger beside ordered state and evidence:
+
+```text
+.mega/state.jsonl       what happened
+.mega/evidence.jsonl    how it was verified
+.mega/decisions.jsonl   why choices were made
+```
+
+Decision records should stay small and structured: question, chosen option, rejected alternatives, evidence references, tradeoffs, reversibility, and self-critique. For UI work, this means the agent records why it chose tabs over a sidebar, a modal over an inline panel, or a compact control over a verbose one, then names what would prove that choice wrong.
+
+This is intentionally not implemented yet. It is the next design topic for Megaskill, with ADR-style prior art and agent self-reflection patterns as inputs.
+
 ## Execution Loop
 
 ```mermaid
@@ -80,21 +100,24 @@ flowchart LR
     D --> E(["Execute one unit"])
     E --> F(["Verify"])
     F --> G(["Record evidence"])
-    G --> H(["Scope check"])
-    H --> I(["Atomic commit check"])
-    I --> J{"Complete?"}
-    J -- "next unit" --> E
-    J -- "yes" --> K(["Final handoff: done"])
-    F -- "fails" --> L{"Real blocker?"}
-    L -- "fixable" --> E
-    L -- "blocked" --> M(["Final handoff: blocked"])
+    G --> H(["Record ordered state"])
+    H --> I(["Read back dashboard"])
+    I --> J(["Scope check"])
+    J --> K(["Atomic commit check"])
+    K --> L{"Whole-plan final gate?"}
+    L -- "continue" --> E
+    L -- "done" --> M(["Final handoff: done"])
+    L -- "blocked" --> N(["Final handoff: blocked"])
+    F -- "fails" --> O{"Real blocker?"}
+    O -- "fixable" --> E
+    O -- "blocked" --> N
 
     classDef action fill:#F8FAFC,stroke:#334155,stroke-width:1.5px,color:#0F172A;
     classDef decision fill:#FEF3C7,stroke:#B45309,stroke-width:1.5px,color:#78350F;
     classDef terminal fill:#ECFDF5,stroke:#047857,stroke-width:1.5px,color:#064E3B;
-    class A,B,C,D,E,F,G,H,I action;
-    class J,L decision;
-    class K,M terminal;
+    class A,B,C,D,E,F,G,H,I,J,K action;
+    class L,O decision;
+    class M,N terminal;
 ```
 
 ## Install
@@ -187,6 +210,53 @@ Summarize recorded evidence:
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_evidence.py summary
 ```
+
+Record ordered execution state:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_state.py record \
+  --plan PLAN.md \
+  --phase "1" \
+  --subphase "1.1" \
+  --kind test \
+  --status done \
+  --summary "Targeted tests passed"
+```
+
+Generate a dashboard without opening a browser:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_dashboard.py PLAN.md \
+  --output .mega/dashboards/PLAN.html \
+  --no-open
+```
+
+Example generated dashboard: [ordered-state-plan.html](</Users/milkingthesun/.codex/skills/megaskill/.mega/dashboards/ordered-state-plan.html>)
+
+Create a plan and dashboard together:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_plan_init.py \
+  "Execution Plan" \
+  --goal "Ship the requested change with tests and evidence" \
+  --output PLAN.md \
+  --dashboard \
+  --no-open
+```
+
+Use `--open` for an explicit browser launch. In CI and deterministic test runs, use `--no-open`.
+
+Check that a whole-plan final handoff is allowed:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/mega_state.py final-gate \
+  --plan PLAN.md \
+  --task TASK --root .mega \
+  --whole-plan \
+  --verdict done
+```
+
+For a blocked handoff, record a `kind=blocker` state event first, then run the same command with `--verdict blocked`. If the gate reports incomplete subphases and no blocker, the agent must continue instead of sending a final answer.
 
 ## Example Goal And Research Plan
 
@@ -344,9 +414,11 @@ Use this shape when assigning work to a lower-level coding agent. The important 
 | --- | --- |
 | `scripts/mega_plan_init.py` | Creates a canonical execution plan skeleton with SOTA research, tooling preflight, real-user testing, fulfillment/readback proof, Armageddon, and generality guardrails. |
 | `scripts/mega_plan_check.py` | Validates plan structure, required SOTA/tooling/fulfillment sections, UI/browser proof, and skip-on-missing-tooling loopholes. |
+| `scripts/mega_state.py` | Records, summarizes, validates ordered execution state, and gates whole-plan final handoffs against `.mega/state.jsonl`. |
+| `scripts/mega_plan_dashboard.py` | Generates a browser-readable HTML dashboard from the canonical plan, ordered state, and evidence ledgers. |
 | `scripts/mega_scope_check.py` | Compares planned touch files with working-tree, staged, and untracked changes; reports artifact-evidence fallback outside Git repos. |
 | `scripts/mega_commit_check.py` | Checks whether staged files look like one atomic commit; reports artifact-evidence fallback outside Git repos. |
-| `scripts/mega_evidence.py` | Records and summarizes verification evidence. |
+| `scripts/mega_evidence.py` | Records and summarizes verification evidence, with optional `state_event_id` correlation. |
 
 ## Validation
 
@@ -365,6 +437,10 @@ The tests cover:
 - artifact creation without write/readback proof failing validation
 - UI plans without browser proof failing validation
 - Playwright availability loopholes failing validation
+- ordered state schema/order validation
+- whole-plan final gate rejection of partial-progress handoffs
+- dashboard generation, readback, and no-open behavior
+- evidence records linked to state events without breaking old records
 - non-Git scope and commit helpers returning clear fallback evidence guidance
 
 ## Skill Files
@@ -378,3 +454,19 @@ The tests cover:
 ## License
 
 MIT
+
+## Outcome verification, ADRs, and subagents
+
+Megaskill includes explicit task-scoped completion checks (`mega_task.py` / `mega_completion.py`), append-only decisions and ADR promotion (`mega_decision.py`), and bounded assignments with native closure receipts (`mega_agents.py`). See [outcome verification](references/runtime-enforcement.md), [decision records](references/decision-records.md), and [subagent dispatch](references/subagent-dispatch.md).
+
+The hook retains completion retries without the inferred permission locks. Direct `continue`, `execute` or `resume` clears Megaskill's own stale review/status pause and resets stalled retries for the same goal. Review/cancel/interrupt pauses automatic continuation, with no tool denial or role permission ceiling. Quoted failure text cannot impose a review lock. Genuine controlling instructions and native permissions still apply. After unchanged retries the loop requests diagnosis/review, then yields as unfinished; an explicit resume restarts it.
+
+### Outcome enforcement, not checkpoint certification
+
+Execute-mode registration now requires `--acceptance ACCEPTANCE.json`: pinned exact-text, JSON-value or independent-review assertions for every obligation. A successful command, screenshot file or CSS animation cannot substitute for the requested outcome. Report/review source hashes and proof coverage must be current. Existing tasks migrate explicitly with `mega_task.py acceptance`; migration revokes prior done receipts. Unfinished bound goals cannot silently be replaced by a smaller task.
+
+`mega_task.py runtime --id TASK` is optional observer diagnostics. Missing hook coverage does not block normal work or explicit outcome verification. Use `final-gate --task TASK --root .mega` to verify results; add `--require-native-runtime` only when observer coverage is specifically required. See [outcome schemas and coverage limits](references/runtime-enforcement.md).
+
+Regression cases retain rejection of nonzero PCB routing counts, missing proof and rejected quality reviews. The disposable canary verifies review -> resume -> continuation, stale-lock removal, wrong-output rejection and successful completion. It does not install hooks or alter native trust or enablement settings.
+
+Roles are selected when useful: thinker, planner, executor, tester, verifier, with the parent as orchestrator. Three open children is the default limit. Completed children must be closed through Codex's native close tool before final handoff. Do not deploy a fixed six-agent chain or recursively fan out.

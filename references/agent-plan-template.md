@@ -11,10 +11,27 @@ Use this shape for lower-level agent plans.
 ## Acceptance Criteria
 - <what proves success>
 
+## Runtime Contract And Decision Record Policy
+- Task mode: plan/review/execute/monitor; execution must be authorized.
+- Exact obligation IDs and relevant proof artifacts:
+- Pinned actual-outcome assertions for every obligation (ACCEPTANCE.json), including independent review for qualitative criteria:
+- Actual session prompt/tool/Stop invocation proof and unsupported-host fallback:
+- Material decisions requiring alternatives/self-critique and ADR promotion:
+- Delegated roles, allowed edit surfaces, and native close/readback requirements:
+
 ## Research
 - Built-in options:
 - Off-the-shelf options:
 - Official / standards sources:
+
+## Root-Cause Baseline
+- Trigger scope:
+- Minimum evidence inventory:
+- Hypothesis model:
+- Missing-evidence policy:
+- Mutation boundary:
+- Remediation mapping:
+- Not-done conditions:
 
 ## SOTA, Standards, And Best Practices
 - Current SOTA / prior art:
@@ -63,6 +80,14 @@ Use this shape for lower-level agent plans.
 - Specific use case implementation through the mechanism:
 - One-off justification, if any:
 
+## Ordered State and Dashboard
+- State ledger path:
+- Dashboard output path:
+- Open behavior:
+- State events to record:
+- Evidence links:
+- Dashboard readback assertions:
+
 ## Regression Guardrails
 - Planned edit surface:
 - Protected behaviors:
@@ -89,6 +114,11 @@ Rules:
 - Do not create a phase without subphases.
 - Do not create a plan without dependency/tooling preflight.
 - Do not create a plan without SOTA/standards research, deterministic real-user test, fulfillment/readback proof, Armageddon mode, and generality guardrail sections.
+- For incidents, outages, live infrastructure, production-adjacent systems, telemetry gaps, data loss, auth/deployment/device/network/service failures, recovery work, or remediation work, do not create a plan without a `Root-Cause Baseline`.
+- A root-cause baseline must inventory evidence, rank hypotheses, name missing evidence and uncertainty, declare the mutation boundary, and map every remediation to a proven or hypothesized failure class.
+- For multi-phase or multi-agent plans, include ordered state and dashboard fields or explicitly justify why the plan is too small to need them.
+- For execution, register exact obligations and use current linked test/readback proof. Stop hooks and final-gate must refer to the same contract. Record material decisions before consequential action, and promote durable accepted decisions to ADRs.
+- Delegate only useful independent work. Bound children, collect results, call native close_agent, and record closure receipts. No mandatory six-agent roster.
 - Do not create a subphase without commit, tests, success criteria, planned touch files, and checklist.
 - Make every subphase independently valid unless explicitly impossible.
 - Name the exact evidence the lower-level agent must produce.

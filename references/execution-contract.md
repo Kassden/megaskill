@@ -20,6 +20,23 @@ Megaskill Guardrail
 - Fulfillment proof:
 ```
 
+## Ordered State And Plan Dashboard
+
+For multi-phase work, Megaskill uses two ledgers plus one generated read view:
+
+- `.mega/state.jsonl`: ordered execution state. This is the canonical timeline for plan, guardrail, subphase, edit, test, evidence, readback, Armageddon, commit, blocker, handoff, and archive events.
+- `.mega/evidence.jsonl`: verification command evidence. Evidence records can optionally include `state_event_id` to link a command result to a state event.
+- generated dashboard HTML: a browser-readable view over the Markdown plan, state ledger, and evidence ledger. The dashboard must not become a hand-edited parallel plan.
+
+Rules:
+
+- Use `scripts/mega_state.py record` to capture ordered progress when the task spans multiple phases, agents, commits, or verification surfaces.
+- Use `scripts/mega_state.py validate` before final handoff for stateful multi-phase plans.
+- Use `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` before claiming completion on whole-plan requests.
+- Use `scripts/mega_plan_dashboard.py PLAN.md --no-open` for deterministic generation and `--open` or interactive defaults when the user expects the dashboard to appear in the browser.
+- In CI or noninteractive execution, suppress browser launch with `--no-open`.
+- Dashboard success requires readback of the generated HTML and, for UI-facing dashboard changes, browser smoke or an explicit real blocker after tooling install/repair was attempted.
+
 ## Damage Radius
 
 Use the highest applicable tier:
@@ -84,6 +101,21 @@ Examples:
 - Live-device or production-adjacent work: perform the strongest read-only or smoke check available before writes, and name credentials or access as blockers if missing.
 
 Do not use "not installed", "not configured", or "no test script" as final verification reasons unless setup was attempted, rejected by approval policy, or blocked by credentials, platform incompatibility, destructive-action boundaries, or an external outage.
+
+## Root-Cause Baseline
+
+For incidents, outages, live infrastructure, production-adjacent systems, telemetry gaps, data loss, auth/deployment/device/network/service failures, recovery work, or remediation work, Megaskill requires root-cause analysis before remediation planning or mutation.
+
+A root-cause baseline must include:
+
+- trigger scope and affected surface
+- evidence inventory: timeline, current health, logs/journals, metrics/readbacks, recent changes, config/state, external dependencies, and user-observed facts
+- hypothesis model: proven, likely, possible, unlikely, and disproven causes with evidence and counter-evidence
+- missing-evidence policy: what could not be obtained, why, who or what could supply it, whether collection is destructive, and how uncertainty constrains remediation
+- mutation boundary: allowed pre-baseline actions are read-only probes, reversible diagnostics, evidence-preserving collection, and urgent restoration to regain access or reduce active harm
+- remediation mapping: every proposed fix names the proven or hypothesized failure class it addresses; generic hardening is labeled as risk reduction, not root-cause remediation
+
+Stop before implementation when a remediation plan jumps from symptoms to hardening, conflates missing guardrails with root cause, lacks outage-window evidence, or omits uncertainty. If evidence is unavailable, record a blocker or a bounded hypothesis; do not present the resulting hardening as a proven fix.
 
 ## Deterministic Real-User Experience Test
 
@@ -216,11 +248,26 @@ For each subphase:
 5. Run fulfillment/readback proof when the work produces or mutates an artifact, record, deployment, external system, or agent-tool result.
 6. Run the declared tests and Armageddon checks.
 7. Record evidence.
-8. Check scope drift.
-9. Stage only that unit.
-10. Check atomicity.
-11. Commit when commits are in scope.
-12. Continue to the next executable subphase.
+8. Record ordered state when the plan spans multiple phases or agents.
+9. Regenerate/read back the plan dashboard when the dashboard is in scope.
+10. Check scope drift.
+11. Stage only that unit.
+12. Check atomicity.
+13. Commit when commits are in scope.
+14. Continue to the next executable subphase.
+
+## Whole-Plan Final Gate
+
+When the user asks to execute the whole plan, finish all phases, not drop the plan, or equivalent full-goal language, subphase completion is a checkpoint only. It is not a valid final stopping condition.
+
+Before a final answer on multi-phase whole-plan work:
+
+1. Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict done` if claiming `done`.
+2. Run `scripts/mega_state.py final-gate --plan PLAN.md --whole-plan --verdict blocked` if claiming `blocked`.
+3. If the gate finds incomplete subphases and no blocker, continue the next executable subphase instead of sending a final answer.
+4. Do not use `not done` as a final handoff for a whole-plan request unless the user explicitly asked for a progress report rather than continued execution.
+
+Regression this prevents: completing one or two atomic slices, saying the full plan is not finished, and ending the turn without a real blocker.
 
 ## Real Blockers
 
